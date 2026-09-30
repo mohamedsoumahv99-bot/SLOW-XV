@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: mega-md
+    runtime: docker
+    plan: 0.5c-512mb
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: OWNER_NUMBER
+        value: "224669288332"
+      - key: DEVELOPER_NAME
+        value: "VArnox Tech"
+      - key: SESSIONS_DIR
+        value: "/data/sessions"
+      - key: DATA_DIR
+        value: "/data/data"
+      - key: TEMP_DIR
+        value: "/tmp/mega-md"
+      - key: NEWSLETTER_JID
+        value: "120363424782348922@newsletter"
+      - key: CHANNEL_INVITE_CODE
+        value: "0029Vb7jG2KEawdwHsZiEm1E"
+      - key: BOT_NAME
+        value: "SLOW-XV"
+      - key: COMMAND_MODE
+        value: "public"
+      - key: TIMEZONE
+        value: "Africa/Conakry"
+      - key: MONGO_URL
+        value: ""
+      - key: POSTGRES_URL
+        value: ""
+      - key: MYSQL_URL
+        value: ""
+      - key: DB_URL
+        value: ""
+    dockerCommand: npm run start:optimized
+    disk:
+      name: mega-md-data
+      mountPath: /data
+      sizeGB: 1

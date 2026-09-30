@@ -1,0 +1,25 @@
+{
+  "name": "slow-xv",
+  "description": "Professional multi-session WhatsApp automation by VArnox Tech",
+  "keywords": ["whatsapp-bot", "baileys", "slow-xv", "multi-session"],
+  "repository": "https://github.com/mohamedsoumahv99-bot/SLOW-XV",
+  "stack": "container",
+  "env": {
+    "OWNER_NUMBER": { "description": "Owner number without +", "required": true, "value": "224669288332" },
+    "DEVELOPER_NAME": { "description": "Developer label", "required": false, "value": "VArnox Tech" },
+    "BOT_NAME": { "description": "Bot display name", "required": false, "value": "SLOW-XV" },
+    "PORT": { "description": "Web Pair port", "required": false, "value": "5000" },
+    "SESSIONS_DIR": { "description": "Isolated session root", "required": false, "value": "sessions" },
+    "NEWSLETTER_JID": { "description": "Central newsletter JID", "required": false, "value": "120363424782348922@newsletter" },
+    "CHANNEL_INVITE_CODE": { "description": "WhatsApp channel invitation code", "required": false, "value": "0029Vb7jG2KEawdwHsZiEm1E" },
+    "TIMEZONE": { "description": "Runtime timezone", "required": false, "value": "Africa/Conakry" },
+    "REMOVEBG_KEY": { "description": "Remove.bg API key", "required": false, "value": "" }
+  },
+  "buildpacks": [
+    { "url": "heroku/nodejs" },
+    { "url": "https://github.com/DuckyTeam/heroku-buildpack-imagemagick.git" },
+    { "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest" },
+    { "url": "https://github.com/clhuang/heroku-buildpack-webp-binaries.git" }
+  ],
+  "formation": { "web": { "quantity": 1, "size": "basic" } }
+}
