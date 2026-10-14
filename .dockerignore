@@ -1,0 +1,17 @@
+.git
+.gitignore
+.dockerignore
+.env
+.env.*
+!.env.example
+node_modules
+lib/bin/
+coverage
+dist
+temp
+tmp
+session
+sessions
+logs
+*.log
+test

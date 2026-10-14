@@ -1,0 +1,27 @@
+app = "slow-xv"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "5000"
+  BOT_NAME = "SLOW-XV"
+  COMMAND_MODE = "public"
+  TIMEZONE = "Africa/Conakry"
+  DEVELOPER_NAME = "VArnox Tech"
+  OWNER_NUMBER = ""
+  SESSIONS_DIR = "sessions"
+  NEWSLETTER_JID = "120363424782348922@newsletter"
+  CHANNEL_INVITE_CODE = "0029Vb7jG2KEawdwHsZiEm1E"
+
+[http_service]
+  internal_port = 5000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
