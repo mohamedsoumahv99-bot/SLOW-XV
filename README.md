@@ -68,7 +68,7 @@ See `.env.example`. Important settings:
 | `SESSIONS_DIR` | Isolated WhatsApp auth/session root |
 | `DATA_DIR` | Settings and counters (ephemeral on Render Free) |
 | `TEMP_DIR` | Temporary media and compiler files |
-| `MAX_SESSIONS` | Hard cap for concurrent sessions (maximum 20) |
+| `MAX_SESSIONS` | Hard cap for saved session records (maximum 20; stopped records count) |
 
 Optional external service keys are read from environment variables; none are
 committed in the source. `.env.example` lists the supported key names.

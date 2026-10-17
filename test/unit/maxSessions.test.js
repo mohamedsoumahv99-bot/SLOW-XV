@@ -28,7 +28,7 @@ describe('maximum concurrent sessions', () => {
             manager.sessions.set(sessionId, { sessionId, phoneNumber: `unused-${index}` });
         }
 
-        await expect(manager.pair('+12025550123')).rejects.toThrow('Maximum active sessions reached');
+        await expect(manager.pair('+12025550123')).rejects.toThrow('Maximum number of saved sessions reached (20).');
         expect(manager.sessions.size).toBe(20);
     });
 
