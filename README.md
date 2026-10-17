@@ -40,14 +40,21 @@ The root `render.yaml` is a Blueprint for a Docker web service. It:
 - installs the native compiler and media tools required by the bot;
 - listens on Render's port `10000`;
 - waits for startup before `/health` reports ready;
-- mounts a 1 GB persistent disk for sessions and settings; and
+- caps the configured session count at 20; and
 - asks for `WEB_PAIR_PASSWORD` as a private Render environment variable.
 
+The Blueprint uses Render's Free plan. Free services have 0.1 CPU / 512 MB RAM,
+can spin down after 15 minutes without inbound traffic, and have no persistent
+disk. WhatsApp session credentials and settings are stored on the ephemeral
+filesystem and can be lost when the service sleeps, restarts, or redeploys;
+you may need to pair the accounts again. The limit of 20 is an enforced ceiling,
+not a guarantee that Free resources can run 20 sessions reliably. For persistent,
+always-on multi-session use, choose a paid plan with a persistent disk instead.
+
 Create the service from the GitHub repository as a Render Blueprint, then enter
-a strong password when prompted. The current Blueprint uses Render's
-`1c-2g` paid plan to leave memory headroom for concurrent WhatsApp sessions.
-Render's persistent disk is also billed separately. Never commit pairing
-credentials, `.env` files, or API keys.
+a strong password of at least 12 characters when prompted. Optional third-party
+API keys can be added under the service's Render environment settings. Never
+commit pairing credentials, `.env` files, or API keys.
 
 ## Configuration
 
@@ -59,12 +66,12 @@ See `.env.example`. Important settings:
 | `OWNER_NUMBER` | Optional bot owner number, without `+` |
 | `PORT` | HTTP port (Render sets `10000`) |
 | `SESSIONS_DIR` | Isolated WhatsApp auth/session root |
-| `DATA_DIR` | Persistent settings and counters |
+| `DATA_DIR` | Settings and counters (ephemeral on Render Free) |
 | `TEMP_DIR` | Temporary media and compiler files |
-| `MAX_SESSIONS` | Concurrent session safety limit |
+| `MAX_SESSIONS` | Hard cap for concurrent sessions (maximum 20) |
 
 Optional external service keys are read from environment variables; none are
-committed in the source.
+committed in the source. `.env.example` lists the supported key names.
 
 ## Checks
 

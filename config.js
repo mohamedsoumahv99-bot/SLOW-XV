@@ -1,5 +1,11 @@
 import 'dotenv/config';
 const _prefixes = process.env.PREFIXES ? process.env.PREFIXES.split(',') : ['.', '!', '/', '#'];
+export function resolveMaxSessions(value) {
+    const requested = Number(value);
+    if (!Number.isFinite(requested)) return 20;
+    return Math.min(Math.max(Math.floor(requested), 1), 20);
+}
+
 const config = {
     // Bot Identity
     botName: process.env.BOT_NAME || 'SLOW-XV',
@@ -30,7 +36,7 @@ const config = {
     pairingTimeoutMs: Number(process.env.PAIRING_TIMEOUT_MS) || 10 * 60 * 1000,
     reconnectBaseDelayMs: Number(process.env.RECONNECT_BASE_DELAY_MS) || 2000,
     reconnectMaxDelayMs: Number(process.env.RECONNECT_MAX_DELAY_MS) || 60000,
-    maxSessions: Number(process.env.MAX_SESSIONS) || 100,
+    maxSessions: resolveMaxSessions(process.env.MAX_SESSIONS),
     // Performance
     port: Number(process.env.PORT) || 5000,
     maxStoreMessages: Number(process.env.MAX_STORE_MESSAGES) || 20,
