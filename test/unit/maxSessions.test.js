@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { resolveMaxSessions } from '../../config.js';
+import { describe, expect, it, vi } from 'vitest';
+import { resolveMaxSessions, resolvePersistentPath } from '../../config.js';
 import { SessionManager } from '../../lib/sessionManager.js';
 
-describe('maximum concurrent sessions', () => {
+describe('saved WhatsApp sessions', () => {
     it('defaults to 20 when unset or invalid', () => {
         expect(resolveMaxSessions(undefined)).toBe(20);
         expect(resolveMaxSessions('not-a-number')).toBe(20);
@@ -19,6 +19,13 @@ describe('maximum concurrent sessions', () => {
     it('allows a lower positive limit and clamps zero to one', () => {
         expect(resolveMaxSessions('3')).toBe(3);
         expect(resolveMaxSessions('0')).toBe(1);
+    });
+
+    it('stores session and bot data under an attached Railway volume by default', () => {
+        expect(resolvePersistentPath(undefined, '/data', 'sessions')).toBe('/data/sessions');
+        expect(resolvePersistentPath(undefined, '/data/', 'data')).toBe('/data/data');
+        expect(resolvePersistentPath('custom/sessions', '/data', 'sessions')).toBe('custom/sessions');
+        expect(resolvePersistentPath(undefined, undefined, 'sessions')).toBe('sessions');
     });
 
     it('rejects a 21st new pairing request', async () => {
@@ -49,7 +56,7 @@ describe('maximum concurrent sessions', () => {
                 fs.mkdirSync(directory);
                 fs.writeFileSync(
                     path.join(directory, 'metadata.json'),
-                    JSON.stringify({ phoneNumber: `saved-${index}` })
+                    JSON.stringify({ phoneNumber: `saved-${index}`, status: 'connected' })
                 );
             }
 
@@ -58,5 +65,106 @@ describe('maximum concurrent sessions', () => {
         } finally {
             fs.rmSync(root, { recursive: true, force: true });
         }
+    });
+
+    it('keeps stopped sessions saved without reconnecting them at startup', async () => {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'slow-xv-stopped-restore-'));
+        const manager = new SessionManager();
+        manager.root = root;
+        manager.ensureCommands = async () => {};
+        manager.start = vi.fn(async (sessionId, phoneNumber) => {
+            const record = manager.get(sessionId);
+            record.phoneNumber = phoneNumber;
+            record.status = 'connected';
+            return record;
+        });
+        manager.pair = async () => {};
+
+        try {
+            for (const [sessionId, status] of [['user_stopped', 'stopped'], ['user_active', 'connected']]) {
+                const directory = path.join(root, sessionId);
+                fs.mkdirSync(directory);
+                fs.writeFileSync(
+                    path.join(directory, 'metadata.json'),
+                    JSON.stringify({ phoneNumber: '+12025550123', status })
+                );
+            }
+
+            await manager.restore();
+
+            expect(manager.start).toHaveBeenCalledTimes(1);
+            expect(manager.start).toHaveBeenCalledWith('user_active', '+12025550123', {
+                requestPairing: false,
+                restoring: true
+            });
+            expect(manager.get('user_stopped').status).toBe('stopped');
+            expect(manager.sessions.size).toBe(2);
+        } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('schedules a retry when an active saved session cannot initialize at startup', async () => {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'slow-xv-retry-restore-'));
+        const manager = new SessionManager();
+        manager.root = root;
+        manager.ensureCommands = async () => {};
+        manager.start = vi.fn().mockRejectedValue(new Error('temporary startup failure'));
+        manager.scheduleReconnect = vi.fn();
+        manager.writeMetadata = vi.fn();
+        manager.pair = async () => {};
+
+        try {
+            const sessionId = 'user_12025550123';
+            const directory = path.join(root, sessionId);
+            fs.mkdirSync(directory);
+            fs.writeFileSync(
+                path.join(directory, 'metadata.json'),
+                JSON.stringify({ phoneNumber: '+12025550123', status: 'connected' })
+            );
+
+            await manager.restore();
+
+            const record = manager.get(sessionId);
+            expect(record.status).toBe('reconnecting');
+            expect(record.lastError).toBe('temporary startup failure');
+            expect(record.reconnectAttempt).toBe(1);
+            expect(manager.scheduleReconnect).toHaveBeenCalledWith(record);
+        } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('preserves active sessions for automatic restore after graceful shutdown', async () => {
+        const manager = new SessionManager();
+        const writeMetadata = vi.fn();
+        const writeToFile = vi.fn().mockResolvedValue(undefined);
+        const record = {
+            sessionId: 'user_12025550123',
+            phoneNumber: '12025550123',
+            dir: '/unused',
+            status: 'connected',
+            socket: {
+                ws: { close: vi.fn() },
+                end: vi.fn()
+            },
+            store: { writeToFile },
+            saveCredsQueue: Promise.resolve(),
+            reconnectTimer: null,
+            pairingTimer: null,
+            manualStop: false,
+            resumeAfterShutdown: false,
+            updatedAt: null
+        };
+        manager.sessions.set(record.sessionId, record);
+        manager.writeMetadata = writeMetadata;
+
+        await manager.shutdown();
+
+        expect(record.status).toBe('reconnecting');
+        expect(record.manualStop).toBe(true);
+        expect(record.socket).toBeNull();
+        expect(writeToFile).toHaveBeenCalledOnce();
+        expect(writeMetadata).toHaveBeenCalledWith(record);
     });
 });

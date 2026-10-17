@@ -1,9 +1,15 @@
 import 'dotenv/config';
+import path from 'node:path';
 const _prefixes = process.env.PREFIXES ? process.env.PREFIXES.split(',') : ['.', '!', '/', '#'];
 export function resolveMaxSessions(value) {
     const requested = Number(value);
     if (!Number.isFinite(requested)) return 20;
     return Math.min(Math.max(Math.floor(requested), 1), 20);
+}
+
+export function resolvePersistentPath(override, volumeMountPath, localPath) {
+    if (override) return override;
+    return volumeMountPath ? path.join(volumeMountPath, localPath) : localPath;
 }
 
 const config = {
@@ -30,8 +36,8 @@ const config = {
     // Session
     sessionId: process.env.SESSION_ID || '',
     pairingNumber: process.env.PAIRING_NUMBER || '',
-    sessionsDir: process.env.SESSIONS_DIR || 'sessions',
-    dataDir: process.env.DATA_DIR || 'data',
+    sessionsDir: resolvePersistentPath(process.env.SESSIONS_DIR, process.env.RAILWAY_VOLUME_MOUNT_PATH, 'sessions'),
+    dataDir: resolvePersistentPath(process.env.DATA_DIR, process.env.RAILWAY_VOLUME_MOUNT_PATH, 'data'),
     tempDir: process.env.TEMP_DIR || 'temp',
     pairingTimeoutMs: Number(process.env.PAIRING_TIMEOUT_MS) || 10 * 60 * 1000,
     reconnectBaseDelayMs: Number(process.env.RECONNECT_BASE_DELAY_MS) || 2000,

@@ -32,6 +32,39 @@ npm start
 Open `http://localhost:5000`. For local testing, set `WEB_PAIR_PASSWORD` in
 `.env`; never commit `.env` or WhatsApp session files.
 
+## Railway deployment
+
+`railway.json` builds with the repository's root `Dockerfile`, starts with
+`npm start`, and waits for `/health` before routing traffic. The Dockerfile
+installs the native build tools and media utilities required by the project.
+
+Before pairing the first WhatsApp account:
+
+1. Deploy the `main` branch from GitHub.
+2. Attach a Railway volume to the service and mount it at `/data`.
+3. Keep the service to one replica; Railway volumes are not shared across
+   replicas or simultaneous deployments.
+4. Set `WEB_PAIR_PASSWORD` to a private password of at least 12 characters and
+   set `MAX_SESSIONS=20`. Add optional API keys only in Railway's Variables.
+
+Railway automatically provides `RAILWAY_VOLUME_MOUNT_PATH` for an attached
+volume. The app stores WhatsApp credentials under the volume's `sessions`
+directory and bot settings under its `data` directory. Attach the volume before
+pairing accounts; otherwise credentials written to the container filesystem
+will not move to the volume automatically.
+
+The app retries transient WhatsApp connection failures and restores up to 20
+saved sessions after a restart. Stopped, logged-out, and unfinished pairing
+records stay saved but are not automatically reconnected. On a paid Railway
+plan, choose the **Always** restart policy in service settings for automatic
+restarts after exits. Railway Free/trial does not offer that policy and limits
+failure restarts to 10.
+
+Persistent storage and automatic retries reduce interruptions, but cannot
+guarantee that WhatsApp will never disconnect a linked device. WhatsApp may
+invalidate a session or require a new pairing, for example after a logout or
+device removal. Railway outages and resource limits can also interrupt service.
+
 ## Render deployment
 
 The root `render.yaml` is a Blueprint for a Docker web service. It:
