@@ -6,7 +6,7 @@ settings, and reconnect lifecycle.
 
 ## Web Pair
 
-Open `/`, sign in with a unique `WEB_PAIR_PASSWORD` of at least 12 characters,
+Open `/`, sign in with the shared `WEB_PAIR_PASSWORD` of at least 12 characters,
 enter a WhatsApp number in
 international format, then enter the pairing code in WhatsApp under
 **Linked devices → Link a device → Link with phone number**.
@@ -16,16 +16,18 @@ HTTP-only, secure in production, and expires after eight hours. `/health` is
 public for Render's health checker and only returns readiness and session
 counts; it does not expose phone numbers or pairing codes.
 
-The web dashboard supports creating, listing, and stopping sessions. Session
-credentials and per-session bot settings are stored separately. A persistent
-disk is required to keep those credentials through a Render redeploy.
+The web dashboard supports creating sessions and viewing their status. It shows
+only the first three phone-number digits and does not expose session IDs, pairing
+codes for other sessions, or a way to stop existing sessions. Session credentials
+and per-session bot settings are stored separately. A persistent disk is required
+to keep those credentials through a Render redeploy.
 
 ## Run locally
 
 ```bash
 npm ci
 cp .env.example .env
-# Set a private, non-empty WEB_PAIR_PASSWORD in .env
+# Set one shared WEB_PAIR_PASSWORD (at least 12 characters) in .env
 npm start
 ```
 
