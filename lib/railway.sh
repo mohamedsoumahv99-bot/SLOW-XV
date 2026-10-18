@@ -20,6 +20,8 @@ railway variables set \
   BOT_NAME="SLOW-XV" \
   TIMEZONE="Africa/Conakry" \
   SESSIONS_DIR="sessions" \
-  NEWSLETTER_JID="120363424782348922@newsletter"
+  NEWSLETTER_JID="120363424782348922@newsletter" \
+  CHANNEL_URL="https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E" \
+  CHANNEL_REACTION_EMOJI="🔥"
 railway up --detach
 echo "SLOW-XV deployed. Inspect it with: railway status"

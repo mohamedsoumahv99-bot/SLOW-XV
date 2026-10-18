@@ -39,6 +39,28 @@ describe('saved WhatsApp sessions', () => {
         expect(manager.sessions.size).toBe(20);
     });
 
+    it('does not restart an existing session or reveal another pending pairing code', async () => {
+        const manager = new SessionManager();
+        const sessionId = 'user_12025550123';
+        const record = {
+            sessionId,
+            phoneNumber: '12025550123',
+            status: 'pairing',
+            pairingCode: 'ABCD-1234',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        manager.sessions.set(sessionId, record);
+        manager.pairingRequests.set(sessionId, Promise.resolve({ pairingCode: 'ABCD-1234' }));
+        manager.start = vi.fn();
+
+        const result = await manager.pair('+12025550123');
+
+        expect(result.reused).toBe(true);
+        expect(result.pairingCode).toBeNull();
+        expect(manager.start).not.toHaveBeenCalled();
+    });
+
     it('restores no more than 20 saved sessions', async () => {
         const root = fs.mkdtempSync(path.join(os.tmpdir(), 'slow-xv-restore-limit-'));
         const manager = new SessionManager();

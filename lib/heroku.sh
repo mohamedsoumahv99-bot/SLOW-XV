@@ -24,6 +24,8 @@ heroku config:set \
   TIMEZONE="Africa/Conakry" \
   SESSIONS_DIR="sessions" \
   NEWSLETTER_JID="120363424782348922@newsletter" \
+  CHANNEL_URL="https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E" \
+  CHANNEL_REACTION_EMOJI="🔥" \
   --app "$APP_NAME"
 git remote get-url heroku >/dev/null 2>&1 || heroku git:remote --app "$APP_NAME"
 git push heroku HEAD:main

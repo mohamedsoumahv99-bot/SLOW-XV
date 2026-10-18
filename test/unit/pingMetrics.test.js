@@ -40,7 +40,7 @@ describe('ping metrics', () => {
         });
 
         expect(caption).toContain('🔎 *Pong : 233.247ms*');
-        expect(caption).toContain('*FALLEN X ANGELS ♪ SYSTEM STATS*');
+        expect(caption).toContain('*SLOW-XV ♪ SYSTEM STATS*');
         expect(caption).toContain('𝗨ᴘᴛɪᴍᴇ* : 35m:11s');
         expect(caption).toContain('𝗥ᴀᴍ* : 45.0%');
         expect(caption).toContain('𝗖ᴘᴜ* : 9.6%');

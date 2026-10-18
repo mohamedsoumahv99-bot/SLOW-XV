@@ -26,6 +26,8 @@ fly secrets set \
   TIMEZONE="Africa/Conakry" \
   SESSIONS_DIR="sessions" \
   NEWSLETTER_JID="120363424782348922@newsletter" \
+  CHANNEL_URL="https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E" \
+  CHANNEL_REACTION_EMOJI="🔥" \
   --app "$APP_NAME"
 fly deploy --app "$APP_NAME" --config fly.toml
 echo "SLOW-XV deployed: fly status --app $APP_NAME"

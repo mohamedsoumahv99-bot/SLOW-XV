@@ -30,6 +30,10 @@ services:
         value: "120363424782348922@newsletter"
       - key: CHANNEL_INVITE_CODE
         value: "0029Vb7jG2KEawdwHsZiEm1E"
+      - key: CHANNEL_URL
+        value: "https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E"
+      - key: CHANNEL_REACTION_EMOJI
+        value: "🔥"
       - key: BOT_NAME
         value: "SLOW-XV"
       - key: COMMAND_MODE

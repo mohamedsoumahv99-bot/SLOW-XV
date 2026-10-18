@@ -31,6 +31,7 @@ const config = {
     newsletterJid: process.env.NEWSLETTER_JID || '120363424782348922@newsletter',
     channelLink: process.env.CHANNEL_URL || process.env.CHANNEL_LINK || 'https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E',
     channelInviteCode: process.env.CHANNEL_INVITE_CODE || '0029Vb7jG2KEawdwHsZiEm1E',
+    channelReactionEmoji: process.env.CHANNEL_REACTION_EMOJI || '🔥',
     updateZipUrl: process.env.UPDATE_URL || '',
     ytChannel: process.env.YT_CHANNEL || '',
     // Session

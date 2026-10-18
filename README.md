@@ -6,7 +6,8 @@ settings, and reconnect lifecycle.
 
 ## Web Pair
 
-Open `/`, sign in with a unique `WEB_PAIR_PASSWORD` of at least 12 characters,
+Open `/`, sign in with the shared `WEB_PAIR_PASSWORD` of at least 12 characters
+(all Web Pair users use the same password; there are no individual accounts),
 enter a WhatsApp number in
 international format, then enter the pairing code in WhatsApp under
 **Linked devices → Link a device → Link with phone number**.
@@ -14,11 +15,16 @@ international format, then enter the pairing code in WhatsApp under
 The dashboard and session-management API require sign-in. The session cookie is
 HTTP-only, secure in production, and expires after eight hours. `/health` is
 public for Render's health checker and only returns readiness and session
-counts; it does not expose phone numbers or pairing codes.
+counts; it does not expose phone numbers or pairing codes. The dashboard shows
+only the first three digits of each phone number. Session identifiers are
+opaque, and the Web Pair dashboard and API do not expose a way to stop or
+disconnect an existing WhatsApp session.
 
-The web dashboard supports creating, listing, and stopping sessions. Session
-credentials and per-session bot settings are stored separately. A persistent
-disk is required to keep those credentials through a Render redeploy.
+The web dashboard supports creating and listing sessions. Before pairing, users
+must confirm that the linked account will follow the official SLOW-XV WhatsApp
+channel and react to each new post with the configured emoji (🔥 by default).
+Session credentials and per-session bot settings are stored separately. A
+persistent disk is required to keep those credentials through a Render redeploy.
 
 ## Run locally
 
@@ -102,6 +108,9 @@ See `.env.example`. Important settings:
 | `DATA_DIR` | Settings and counters (ephemeral on Render Free) |
 | `TEMP_DIR` | Temporary media and compiler files |
 | `MAX_SESSIONS` | Hard cap for saved session records (maximum 20; stopped records count) |
+| `NEWSLETTER_JID` | Official SLOW-XV WhatsApp channel JID to follow and monitor |
+| `CHANNEL_URL` | Official channel link shown before pairing |
+| `CHANNEL_REACTION_EMOJI` | Emoji applied automatically to each new channel post |
 
 Optional external service keys are read from environment variables; none are
 committed in the source. `.env.example` lists the supported key names.
