@@ -36,6 +36,18 @@ describe('Fallen X-inspired SLOW-XV menu', () => {
         expect(text).toContain(tick + '.settings' + tick);
     });
 
+    it('uses the requested owner label when the generic config fallback is present', () => {
+        const text = buildStyledMenu({
+            categories: new Map([['general', ['menu']]]),
+            commandCount: 1,
+            owner: 'SLOW-XV',
+            prefix: '.',
+            mode: 'private',
+            user: 'Aminata'
+        });
+        expect(text.split('\n')[1]).toContain('vArnox');
+    });
+
     it('formats uptime and WhatsApp message latency', () => {
         expect(formatUptime(296)).toBe('4m 56s');
         expect(getMessageLatency({ messageTimestamp: 1800000000000 }, 1800000000185)).toBe(185);
