@@ -8,8 +8,8 @@ import {
 
 const tick = String.fromCharCode(96);
 
-describe('Fallen X-inspired SLOW-XV menu', () => {
-    it('renders live metadata, system stats and the full command groups consistently', () => {
+describe('SLOW-XV primary menu', () => {
+    it('matches the supplied menu layout and renders every command category', () => {
         const text = buildStyledMenu({
             categories: new Map([['general', ['menu', 'ping']], ['owner', ['settings']]]),
             commandCount: 3,
@@ -23,17 +23,23 @@ describe('Fallen X-inspired SLOW-XV menu', () => {
             version: '1.0.0'
         });
 
-        expect(text).toContain('𝗦ʟᴏᴡ-XV');
+        expect(text).toContain('╭─〔 *SLOW-XV* 🤖〕➤');
         expect(text).toContain('vArnox');
-        expect(text).toContain('[ . ]');
+        expect(text).toContain('`🏷️ Prefix`    : .');
         expect(text).toContain('PRIVATE');
-        expect(text).toContain('➪ 3');
-        expect(text).toContain('4m 56s');
-        expect(text).toContain('185 ms');
-        expect(text).toContain('Linux');
-        expect(text).toContain('1.0.0');
+        expect(text).toContain('`📚 Commands`  : 3');
+        expect(text).toContain('╭─〔 SYSTEM STATS 〕➤');
+        expect(text).toContain('│◯ ⏱️ Uptime    : 4 minutes, 56 seconds');
+        expect(text).toContain('│◯ 🚀 Latency   : 185 ms');
+        expect(text).toContain('│◯ 💻 Platform  : Linux');
+        expect(text).toContain('│◯ 🤖 Version   : 1.0.0');
+        expect(text).toContain('╭─❮ ⸸ 𝗖ᴏᴍᴍᴀɴᴅs · OWNER ⸸ ❯');
+        expect(text).toContain('╭─❮ ⸸ 𝗖ᴏᴍᴍᴀɴᴅs · GENERAL ⸸ ❯');
         expect(text).toContain(tick + '.menu' + tick);
         expect(text).toContain(tick + '.settings' + tick);
+        expect(text).toContain('> 𝗦ʟᴏᴡ xv🤖by vArnox_tech');
+        expect(text).not.toContain('Aminata');
+        expect(text.indexOf('· OWNER')).toBeLessThan(text.indexOf('· GENERAL'));
     });
 
     it('uses the requested owner label when the generic config fallback is present', () => {
@@ -48,8 +54,14 @@ describe('Fallen X-inspired SLOW-XV menu', () => {
         expect(text.split('\n')[1]).toContain('vArnox');
     });
 
-    it('formats uptime and WhatsApp message latency', () => {
-        expect(formatUptime(296)).toBe('4m 56s');
+    it('formats the uptime in the long form used by the primary menu', () => {
+        expect(formatUptime(296)).toBe('4 minutes, 56 seconds');
+        expect(formatUptime(1)).toBe('1 second');
+        expect(formatUptime(0)).toBe('0 seconds');
+        expect(formatUptime(90061)).toBe('1 day, 1 hour, 1 minute, 1 second');
+    });
+
+    it('formats WhatsApp message latency', () => {
         expect(getMessageLatency({ messageTimestamp: 1800000000000 }, 1800000000185)).toBe(185);
         expect(getMessageLatency({}, 1800000000185)).toBe(0);
     });
