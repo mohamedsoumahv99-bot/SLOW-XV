@@ -8,7 +8,7 @@
  *                                                                           *
  *    © 2026 GlobalTechInfo. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the MEGA-MD Project.                 *
+ *    Description: This file is part of the SLOW-XV Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -64,7 +64,7 @@ export default {
  *                                                                           *
  *    © 2026 GlobalTechInfo. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the MEGA-MD Project.                 *
+ *    Description: This file is part of the SLOW-XV Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/

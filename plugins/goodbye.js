@@ -1,89 +1,75 @@
 import { handleGoodbye } from '../lib/welcome.js';
 import { isGoodByeOn, getGoodbye } from '../lib/index.js';
+import { channelInfo } from '../lib/messageConfig.js';
+import { formatGroupDate, formatGroupEventMessage, getGroupMemberCount, normalizeParticipantId } from '../lib/groupMessageFormatter.js';
 async function handleLeaveEvent(sock, id, participants) {
     const isGoodbyeEnabled = await isGoodByeOn(id);
-    if (!isGoodbyeEnabled)
-        return;
-    const customMessage = await getGoodbye(id);
-    const groupMetadata = await sock.groupMetadata(id);
-    const groupName = groupMetadata.subject;
-    for (const participant of participants) {
+    if (!isGoodbyeEnabled) return;
+
+    const storedMessage = await getGoodbye(id);
+    const customMessage = typeof storedMessage === 'string'
+        && storedMessage.length > 0
+        && storedMessage !== 'Goodbye {user} 👋'
+        && !storedMessage.startsWith('╔═⚔️ GOODBYE')
+        ? storedMessage
+        : null;
+    const groupMetadata = await sock.groupMetadata(id).catch((error) => {
+        console.error('Could not fetch group metadata for goodbye:', error.message);
+        return { subject: id.split('@')[0], participants: [] };
+    });
+    const groupName = groupMetadata.subject || id.split('@')[0];
+    const groupParticipants = groupMetadata.participants || [];
+    const changedParticipants = Array.isArray(participants) ? participants : [participants];
+    const memberCount = getGroupMemberCount(groupParticipants, changedParticipants, 'remove');
+
+    for (const participant of changedParticipants) {
+        const participantString = normalizeParticipantId(participant);
+        if (!participantString) continue;
         try {
-            const participantString = typeof participant === 'string' ? participant : (participant.id || participant.toString());
-            const user = participantString.split('@')[0];
-            let displayName = user;
+            const finalMessage = formatGroupEventMessage({
+                type: 'goodbye',
+                participantId: participantString,
+                groupName,
+                members: memberCount,
+                date: formatGroupDate(),
+                customMessage
+            });
+
             try {
-                const contact = await sock.getBusinessProfile(participantString);
-                if (contact && contact.name) {
-                    displayName = contact.name;
-                }
-                else {
-                    const groupParticipants = groupMetadata.participants;
-                    const userParticipant = groupParticipants.find((p) => p.id === participantString);
-                    if (userParticipant && userParticipant.name) {
-                        displayName = userParticipant.name;
-                    }
-                }
-            }
-            catch (nameError) {
-                console.log('Could not fetch display name, using phone number');
-            }
-            let finalMessage;
-            if (customMessage) {
-                finalMessage = customMessage
-                    .replace(/{user}/g, `@${displayName}`)
-                    .replace(/{group}/g, groupName);
-            }
-            else {
-                finalMessage = `*@${displayName}* we will never miss you!`;
-            }
-            try {
-                let profilePicUrl = `https://img.pyrocdn.com/dbKUgahg.png`;
-                try {
-                    const profilePic = await sock.profilePictureUrl(participantString, 'image');
-                    if (profilePic) {
-                        profilePicUrl = profilePic;
-                    }
-                }
-                catch (profileError) {
-                    console.log('Could not fetch profile picture, using default');
-                }
-                const apiUrl = `https://api.some-random-api.com/welcome/img/2/gaming1?type=leave&textcolor=red&username=${encodeURIComponent(displayName)}&guildName=${encodeURIComponent(groupName)}&memberCount=${groupMetadata.participants.length}&avatar=${encodeURIComponent(profilePicUrl)}`;
-                const response = await fetch(apiUrl);
-                if (response.ok) {
-                    const imageBuffer = Buffer.from(await response.arrayBuffer());
+                const profilePicUrl = await sock.profilePictureUrl(participantString, 'image');
+                if (profilePicUrl) {
                     await sock.sendMessage(id, {
-                        image: imageBuffer,
+                        image: { url: profilePicUrl },
                         caption: finalMessage,
-                        mentions: [participantString]
+                        mentions: [participantString],
+                        ...channelInfo
                     });
                     continue;
                 }
             }
-            catch (imageError) {
-                console.log('Image generation failed, falling back to text');
+            catch (photoError) {
+                console.log('Goodbye photo unavailable; sending the message as text:', photoError.message);
             }
             await sock.sendMessage(id, {
                 text: finalMessage,
-                mentions: [participantString]
+                mentions: [participantString],
+                ...channelInfo
             });
         }
         catch (error) {
             console.error('Error sending goodbye message:', error);
-            const participantString = typeof participant === 'string' ? participant : (participant.id || participant.toString());
-            const user = participantString.split('@')[0];
-            let fallbackMessage;
-            if (customMessage) {
-                fallbackMessage = customMessage
-                    .replace(/{user}/g, `@${user}`)
-                    .replace(/{group}/g, groupName);
-            }
-            else {
-                fallbackMessage = `Goodbye @${user}! 👋`;
-            }
+            const fallbackMessage = formatGroupEventMessage({
+                type: 'goodbye',
+                participantId: participantString,
+                groupName,
+                members: memberCount,
+                date: formatGroupDate(),
+                customMessage
+            });
             await sock.sendMessage(id, {
                 text: fallbackMessage,
-                mentions: [participantString]
+                mentions: [participantString],
+                ...channelInfo
             });
         }
     }

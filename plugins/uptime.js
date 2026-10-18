@@ -8,7 +8,7 @@
  *                                                                           *
  *    © 2026 GlobalTechInfo. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the MEGA-MD Project.                 *
+ *    Description: This file is part of the SLOW-XV Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -41,7 +41,7 @@ export default {
         const startedAt = new Date(Date.now() - uptimeMs).toLocaleString();
         const ramMb = (process.memoryUsage().rss / 1024 / 1024).toFixed(1);
         const commandCount = commandHandler.commands.size;
-        const text = `🤖 *MEGA-MD STATUS*\n\n` +
+        const text = `🤖 *SLOW-XV STATUS*\n\n` +
             `⏱ Uptime: ${formatUptime(uptimeMs)}\n` +
             `🚀 Started: ${startedAt}\n` +
             `📦 Plugins: ${commandCount}\n` +
@@ -59,7 +59,7 @@ export default {
  *                                                                           *
  *    © 2026 GlobalTechInfo. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the MEGA-MD Project.                 *
+ *    Description: This file is part of the SLOW-XV Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
