@@ -4,7 +4,7 @@ export default {
     command: 'pair',
     aliases: ['paircode', 'session', 'getsession', 'sessionid'],
     category: 'general',
-    description: 'Get session id for MEGA-MD',
+    description: 'Get session id for SLOW-XV',
     usage: '.pair 92305395XXXX',
     async handler(sock, message, args, context) {
         const { chatId } = context;
@@ -41,7 +41,7 @@ export default {
             const result = await sessionManager.pair(number);
             if (result.pairingCode) {
                 const pairingCode = result.pairingCode;
-                const successText = `✅ *MEGA-MD PAIRING CODE*\n\n` +
+                const successText = `✅ *SLOW-XV PAIRING CODE*\n\n` +
                     `Code: *${pairingCode}*\n\n` +
                     `*How to use:*\n` +
                     `1. Open WhatsApp Settings\n` +

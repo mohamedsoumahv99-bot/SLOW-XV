@@ -9,7 +9,7 @@ export default {
         const chatId = context.chatId || message.key.remoteJid;
         if (!args.length) {
             return await sock.sendMessage(chatId, {
-                text: '*Please provide a Telegram username.*\nExample: .tginfo GlobalTechBots'
+                text: '*Please provide a Telegram username.*\nExample: .tginfo username'
             }, { quoted: message });
         }
         const username = args[0];

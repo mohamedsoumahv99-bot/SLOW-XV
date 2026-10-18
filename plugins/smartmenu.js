@@ -2,6 +2,7 @@ import config from '../config.js';
 import CommandHandler from '../lib/commandHandler.js';
 import fs from 'fs';
 import path from 'path';
+import { buildStyledMenu, getBotMode, getMessageLatency, getMenuUser } from '../lib/menuFormatter.js';
 const menuEmojis = ['✨', '🌟', '⭐', '💫', '🎯', '🎨', '🎪', '🎭'];
 const activeEmojis = ['✅', '🟢', '💚', '✔️', '☑️'];
 const disabledEmojis = ['❌', '🔴', '⛔', '🚫', '❎'];
@@ -64,9 +65,9 @@ export default {
             const disabledEmoji = getRandomEmoji(disabledEmojis);
             const fastEmoji = getRandomEmoji(fastEmojis);
             const slowEmoji = getRandomEmoji(slowEmojis);
-            let menuText = `${menuEmoji} *${config.botName || 'MEGA-MD'}* ${menuEmoji}\n\n`;
+            let menuText = `${menuEmoji} *${config.botName || 'SLOW-XV'}* ${menuEmoji}\n\n`;
             menuText += `┏━━━━━━━━━━━━━━━━┓\n`;
-            menuText += `┃ 📱 *Bot:* ${config.botName || 'MEGA-MD'}\n`;
+            menuText += `┃ 📱 *Bot:* ${config.botName || 'SLOW-XV'}\n`;
             menuText += `┃ 🔖 *Version:* ${config.version || '6.0.0'}\n`;
             menuText += `┃ 👤 *Owner:* ${config.botOwner || 'Unknown'}\n`;
             menuText += `┃ ⏰ *Time:* ${formatTime()}\n`;
@@ -112,6 +113,17 @@ export default {
             menuText += `├─ ${fastEmoji} Fast Response\n`;
             menuText += `├─ ${slowEmoji} Slow Response\n`;
             menuText += `⁠└────────────────`;
+            menuText = buildStyledMenu({
+                categories: CommandHandler.categories,
+                commandCount: CommandHandler.commands.size,
+                owner: config.botOwner,
+                prefix: config.prefix,
+                mode: await getBotMode(sock),
+                user: getMenuUser(message),
+                uptimeSeconds: process.uptime(),
+                latencyMs: getMessageLatency(message),
+                version: config.version
+            });
             const contextInfo = {
                 forwardingScore: 1,
                 isForwarded: true,

@@ -12,14 +12,21 @@ export function resolvePersistentPath(override, volumeMountPath, localPath) {
     return volumeMountPath ? path.join(volumeMountPath, localPath) : localPath;
 }
 
+function resolveIdentity(value, fallback, includeSlowXv = false) {
+    const identity = String(value || '').trim();
+    const oldBrand = /^(?:MEGA[\s-]?MDX?|GLOBAL\s*TECH(?:[\s-]*(?:INFO|INC))?\.?)$/i;
+    const oldOwner = includeSlowXv && /^SLOW-XV$/i.test(identity);
+    return !identity || oldBrand.test(identity) || oldOwner ? fallback : identity;
+}
+
 const config = {
     // Bot Identity
-    botName: process.env.BOT_NAME || 'SLOW-XV',
-    botOwner: process.env.BOT_OWNER || 'SLOW-XV',
+    botName: resolveIdentity(process.env.BOT_NAME, 'SLOW-XV'),
+    botOwner: resolveIdentity(process.env.BOT_OWNER, 'vArnox', true),
     ownerNumber: process.env.OWNER_NUMBER || '',
-    developerName: process.env.DEVELOPER_NAME || 'VArnox Tech',
-    author: process.env.AUTHOR || 'VArnox Tech',
-    packname: process.env.PACKNAME || 'SLOW-XV',
+    developerName: resolveIdentity(process.env.DEVELOPER_NAME, 'VArnox Tech'),
+    author: resolveIdentity(process.env.AUTHOR, 'VArnox Tech'),
+    packname: resolveIdentity(process.env.PACKNAME, 'SLOW-XV'),
     description: process.env.DESCRIPTION || 'Professional multi-session WhatsApp automation',
     version: process.env.BOT_VERSION || '1.0.0',
     // Bot Config

@@ -34,7 +34,7 @@ export default {
             menuText +=
                 `━━━━━━━━━━━━━━━━━━━
 💡 *Tip:* Use short & clear text for best results
-🤖 Powered by *MEGA-MD*`;
+🤖 Powered by *SLOW-XV*`;
             return await sock.sendMessage(chatId, { text: menuText }, { quoted: message });
         }
         try {
@@ -101,7 +101,7 @@ export default {
             }
             await sock.sendMessage(chatId, {
                 image: { url: result.image },
-                caption: `🔥 *GENERATED SUCCESSFULLY* 🔥\n✨ Powered by *MEGA-MD*`
+                caption: `🔥 *GENERATED SUCCESSFULLY* 🔥\n✨ Powered by *SLOW-XV*`
             }, { quoted: message });
         }
         catch (error) {
