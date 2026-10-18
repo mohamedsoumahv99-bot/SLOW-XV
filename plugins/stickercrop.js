@@ -38,7 +38,7 @@ export async function stickercropFromBuffer(inputBuffer, isAnimated) {
     await img.load(webpBuffer);
     const json = {
         'sticker-pack-id': crypto.randomBytes(32).toString('hex'),
-        'sticker-pack-name': config.packname || 'MEGA-MD',
+        'sticker-pack-name': config.packname || 'SLOW-XV',
         'emojis': ['✂️']
     };
     const exifAttr = Buffer.from([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00]);

@@ -29,7 +29,7 @@ async function fetchQuotes() {
         if (allQuotes.length === 0) {
             // Fallback quotes if fetch fails
             return [
-                '💎 By MEGA-MD - Your WhatsApp Bot',
+                '💎 By SLOW-XV - Your WhatsApp Bot',
                 '🌟 Stay positive, work hard, make it happen.',
                 '✨ Believe in yourself and all that you are.',
                 '🚀 The future belongs to those who believe in the beauty of their dreams.',
@@ -44,12 +44,12 @@ async function fetchQuotes() {
         return allQuotes;
     }
     catch (error) {
-        return cachedQuotes.length > 0 ? cachedQuotes : ['💎 By MEGA-MD - Your WhatsApp Bot'];
+        return cachedQuotes.length > 0 ? cachedQuotes : ['💎 By SLOW-XV - Your WhatsApp Bot'];
     }
 }
 function getRandomQuote(quotes) {
     if (!quotes || quotes.length === 0)
-        return '💎 By MEGA-MD';
+        return '💎 By SLOW-XV';
     return quotes[Math.floor(Math.random() * quotes.length)];
 }
 async function updateAutoBio(sock) {
@@ -64,7 +64,7 @@ async function updateAutoBio(sock) {
             bio = autoBioSettings.customBio.replace('{quote}', randomQuote);
         }
         else {
-            bio = `${randomQuote}\n\n💎 MEGA-MD`;
+            bio = `${randomQuote}\n\n💎 SLOW-XV`;
         }
         if (bio.length > 139) {
             bio = `${bio.substring(0, 136) }...`;
@@ -117,7 +117,7 @@ export default {
                         `• \`.setbio set <text>\` - Set custom bio\n` +
                         `• \`.setbio reset\` - Reset to default bio\n` +
                         `• \`.setbio preview\` - Preview random quote\n\n` +
-                        `*Default Bio:*\n{quote}\n💎 MEGA-MD\n\n` +
+                        `*Default Bio:*\n{quote}\n💎 SLOW-XV\n\n` +
                         `*Custom Bio:*\n${autoBioSettings.customBio || 'Not set'}\n\n` +
                         `*Note:* Use \`{quote}\` in custom bio to insert random quotes.\n\n` +
                         `*Sources:*\n• Famous Quotes\n• Motivational Quotes\n• Pickup Lines`
@@ -127,7 +127,7 @@ export default {
                 const quotes = await fetchQuotes();
                 const randomQuote = getRandomQuote(quotes);
                 return await sock.sendMessage(chatId, {
-                    text: `*📝 Preview Quote*\n\n${randomQuote}\n\n💎 MEGA-MD\n\n_This is how your bio will look with random quotes_`
+                    text: `*📝 Preview Quote*\n\n${randomQuote}\n\n💎 SLOW-XV\n\n_This is how your bio will look with random quotes_`
                 }, { quoted: message });
             }
             if (action === 'on') {
@@ -188,7 +188,7 @@ export default {
                     await updateAutoBio(sock);
                 }
                 return await sock.sendMessage(chatId, {
-                    text: '✅ *Bio reset to default!*\n\n*Default bio:*\n{quote}\n💎 MEGA-MD'
+                    text: '✅ *Bio reset to default!*\n\n*Default bio:*\n{quote}\n💎 SLOW-XV'
                 }, { quoted: message });
             }
             return await sock.sendMessage(chatId, {

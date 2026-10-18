@@ -16,6 +16,7 @@ import config from '../config.js';
 import commandHandler from '../lib/commandHandler.js';
 import path from 'path';
 import fs from 'fs';
+import { buildStyledMenu, getBotMode, getMessageLatency, getMenuUser } from '../lib/menuFormatter.js';
 function formatTime() {
     const now = new Date();
     const options = {
@@ -28,20 +29,18 @@ function formatTime() {
 }
 const menuStyles = [
     {
-        render({ _title, info, categories, prefix }) {
-            let t = `╭━━『 *MEGA MENU* 』━⬣\n`;
-            t += `┃ ✨ *Bot: ${info.bot}*\n`;
-            t += `┃ 🔧 *Prefix: ${info.prefix}*\n`;
-            t += `┃ 📦 *Plugin: ${info.total}*\n`;
-            t += `┃ 💎 *Version: ${info.version}*\n`;
-            t += `┃ ⏰ *Time: ${info.time}*\n`;
-            for (const [cat, cmds] of categories) {
-                t += `┃━━━ *${cat.toUpperCase()}* ━✦\n`;
-                for (const c of cmds)
-                    t += `┃ ➤ ${prefix}${c}\n`;
-            }
-            t += `╰━━━━━━━━━━━━━⬣`;
-            return t;
+        render({ info, categories, prefix }) {
+            return buildStyledMenu({
+                categories,
+                commandCount: info.total,
+                owner: info.owner,
+                prefix,
+                mode: info.mode,
+                user: info.user,
+                uptimeSeconds: info.uptimeSeconds,
+                latencyMs: info.latencyMs,
+                version: info.version
+            });
         }
     },
     {
@@ -147,7 +146,7 @@ const menuStyles = [
         }
     }
 ];
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const pick = (arr) => arr[0];
 export default {
     command: 'menu',
     aliases: ['help', 'commands', 'h', 'list'],
@@ -172,13 +171,13 @@ export default {
                 }, { quoted: message });
             }
             const text = `╭━━━━━━━━━━━━━━⬣
-┃ 📌 *COMMAND INFO*
+┃ 𓆩 *𝗖ᴏᴍᴍᴀɴᴅ 𝗜ɴғᴏ* 𓆪
 ┃
-┃ ⚡ *Command:* ${prefix}${cmd.command}
-┃ 📝 *Desc:* ${cmd.description || 'No description'}
-┃ 📖 *Usage:* ${cmd.usage || `${prefix}${cmd.command}`}
-┃ 🏷️ *Category:* ${cmd.category || 'misc'}
-┃ 🔖 *Aliases:* ${cmd.aliases?.length ? cmd.aliases.map((a) => prefix + a).join(', ') : 'None'}
+┃ ⸸ *𝗖ᴏᴍᴍᴀɴᴅ:* ${prefix}${cmd.command}
+┃ 🝐 *𝗗ᴇsᴄ:* ${cmd.description || 'No description'}
+┃ ⸸ *𝗨sᴀɢᴇ:* ${cmd.usage || `${prefix}${cmd.command}`}
+┃ 🝐 *𝗖ᴀᴛᴇɢᴏʀʏ:* ${cmd.category || 'misc'}
+┃ ⸸ *𝗔ʟɪᴀsᴇs:* ${cmd.aliases?.length ? cmd.aliases.map((a) => prefix + a).join(', ') : 'None'}
 ┃
 ╰━━━━━━━━━━━━━━⬣`;
             if (fs.existsSync(imagePath)) {
@@ -198,8 +197,13 @@ export default {
                 bot: config.botName,
                 prefix: config.prefixes.join(', '),
                 total: commandHandler.commands.size,
-                version: config.version || "6.0.0",
-                time: formatTime()
+                version: config.version || '1.0.0',
+                time: formatTime(),
+                owner: config.botOwner,
+                mode: await getBotMode(sock),
+                user: getMenuUser(message),
+                uptimeSeconds: process.uptime(),
+                latencyMs: getMessageLatency(message)
             },
             categories: commandHandler.categories
         });

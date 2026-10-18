@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import fs from 'fs';
 import { writeExifVid } from '../lib/exif.js';
+import config from '../config.js';
 export default {
     command: 'attp',
     aliases: ['texts', 'textsticker'],
@@ -15,7 +16,7 @@ export default {
         }
         try {
             const mp4Buffer = await renderBlinkingVideoWithFfmpeg(text);
-            const webpPath = await writeExifVid(mp4Buffer, { packname: 'Mega Md', author: 'MEGA-MD' });
+            const webpPath = await writeExifVid(mp4Buffer, { packname: config.packname, author: config.author });
             const webpBuffer = fs.readFileSync(webpPath);
             try {
                 fs.unlinkSync(webpPath);

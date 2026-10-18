@@ -12,7 +12,7 @@ export default {
             const link = args[0];
             if (!link) {
                 return await sock.sendMessage(chatId, {
-                    text: `❌ *Missing Link!*\n\nExample: .gitclone2 https://github.com/GlobalTechInfo/MEGA-MD`
+                    text: `❌ *Missing Link!*\n\nExample: .gitclone2 https://github.com/mohamedsoumahv99-bot/SLOW-XV`
                 }, { quoted: message });
             }
             if (!regex.test(link)) {
@@ -37,7 +37,7 @@ export default {
                 document: { url },
                 fileName: filename,
                 mimetype: 'application/zip',
-                caption: `📦 *Repository:* ${user}/${repo}\n✨ *Cloned by MEGA-MD*`
+                caption: `📦 *Repository:* ${user}/${repo}\n✨ *Cloned by SLOW-XV*`
             }, { quoted: message });
         }
         catch (err) {
