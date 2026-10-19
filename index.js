@@ -22,7 +22,8 @@ const DATA_DEFAULTS = {
     'messageCount.json': { isPublic: true, messageCount: {} },
     'userGroupData.json': {
         users: [], groups: [], antilink: {}, antibadword: {}, warnings: {},
-        sudo: [], welcome: {}, goodbye: {}, chatbot: {}, autoReaction: false
+        sudo: [], welcome: {}, goodbye: {}, chatbot: {}, autoReaction: false,
+        commandReactionEnabled: true
     },
     'autoStatus.json': { enabled: false },
     'autoread.json': { enabled: false },

@@ -1,6 +1,7 @@
 import isOwnerOrSudo, { cleanJid } from '../lib/isOwner.js';
 import { getChatbot, getWelcome, getGoodbye, getAntitag } from '../lib/index.js';
 import store from '../lib/lightweight_store.js';
+import { loadCommandReactState } from '../lib/reactions.js';
 export default {
     command: 'settings',
     aliases: ['config', 'setting'],
@@ -30,16 +31,7 @@ export default {
             const autoReaction = autoReactionData?.enabled || false;
             const stealthMode = await store.getSetting('global', 'stealthMode') || { enabled: false };
             const autoBio = await store.getSetting('global', 'autoBio') || { enabled: false };
-            // cmdreact saves to userGroupData.json as data.autoReaction
-            const fs = (await import('fs')).default;
-            let cmdReactEnabled = true;
-            try {
-                const ugd = JSON.parse(fs.readFileSync('./data/userGroupData.json', 'utf-8'));
-                cmdReactEnabled = ugd.autoReaction ?? true;
-            }
-            catch {
-                cmdReactEnabled = true;
-            }
+            const cmdReactEnabled = await loadCommandReactState();
             const getSt = (val) => val ? '✅' : '❌';
             let menuText = `╭━〔 *MEGA CONFIG* 〕━┈\n┃\n`;
             menuText += `┃ 👤 *User:* @${cleanJid(senderId)}\n`;

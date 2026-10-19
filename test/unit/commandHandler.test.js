@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+vi.mock('../../lib/reactions.js', () => ({
+    addCommandReaction: vi.fn(async () => {}),
+    setCommandReactState: vi.fn(async () => {}),
+    loadCommandReactState: vi.fn(async () => true)
+}));
+
 // Mock fs.watch and fs.readdirSync to avoid side effects
 vi.mock('fs', async (importOriginal) => {
     const actual = await importOriginal();
@@ -38,6 +44,50 @@ describe('CommandHandler', () => {
         handler.registerCommand({ command: 'test', aliases: ['t', 'tst'], category: 'general', description: 'test', async handler() {} });
         expect(handler.aliases.has('t')).toBe(true);
         expect(handler.aliases.has('tst')).toBe(true);
+    });
+
+    it('reacts with the command emoji before invoking its handler', async () => {
+        const { addCommandReaction } = await import('../../lib/reactions.js');
+        const order = [];
+        vi.mocked(addCommandReaction).mockImplementationOnce(async (_sock, _message, commandName) => {
+            order.push('reaction:' + commandName);
+        });
+        handler.registerCommand({
+            command: 'orderedtest',
+            aliases: [],
+            category: 'test',
+            async handler() {
+                order.push('response');
+            }
+        });
+        const sock = { sendMessage: vi.fn() };
+        const message = { key: { remoteJid: 'chat', participant: 'user', id: 'message-id' } };
+
+        await handler.commands.get('orderedtest').handler(sock, message);
+
+        expect(addCommandReaction).toHaveBeenCalledWith(sock, message, 'orderedtest');
+        expect(order).toEqual(['reaction:orderedtest', 'response']);
+    });
+
+    it('runs the command even if its reaction fails', async () => {
+        const { addCommandReaction } = await import('../../lib/reactions.js');
+        const order = [];
+        vi.mocked(addCommandReaction).mockRejectedValueOnce(new Error('reaction unavailable'));
+        handler.registerCommand({
+            command: 'reactionfailuretest',
+            aliases: [],
+            category: 'test',
+            async handler() {
+                order.push('response');
+            }
+        });
+
+        await expect(handler.commands.get('reactionfailuretest').handler(
+            { sendMessage: vi.fn() },
+            { key: { remoteJid: 'chat', participant: 'user', id: 'message-id-2' } }
+        )).resolves.toBeUndefined();
+
+        expect(order).toEqual(['response']);
     });
 
     it('getCommand finds by prefix', () => {
