@@ -39,7 +39,7 @@ describe('saved WhatsApp sessions', () => {
         expect(manager.sessions.size).toBe(20);
     });
 
-    it('does not restart an existing session or reveal another pending pairing code', async () => {
+    it('returns the active pairing code when the same phone number is submitted again', async () => {
         const manager = new SessionManager();
         const sessionId = 'user_12025550123';
         const record = {
@@ -47,18 +47,88 @@ describe('saved WhatsApp sessions', () => {
             phoneNumber: '12025550123',
             status: 'pairing',
             pairingCode: 'ABCD-1234',
+            dir: '/tmp/slow-xv-active-pair',
+            socket: {},
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
         manager.sessions.set(sessionId, record);
-        manager.pairingRequests.set(sessionId, Promise.resolve({ pairingCode: 'ABCD-1234' }));
+        manager.writeMetadata = vi.fn();
         manager.start = vi.fn();
+
+        const result = await manager.pair('+12025550123', { reactionEmojis: ['❤️', '👍'] });
+
+        expect(result.reused).toBe(true);
+        expect(result.pairingCode).toBe('ABCD-1234');
+        expect(result.reactionEmojis).toEqual(['❤️', '👍']);
+        expect(manager.start).not.toHaveBeenCalled();
+    });
+
+    it('generates a fresh pairing code after a previous code expires', async () => {
+        const manager = new SessionManager();
+        const sessionId = 'user_12025550123';
+        manager.sessions.set(sessionId, {
+            sessionId,
+            phoneNumber: '12025550123',
+            status: 'pairing_expired',
+            pairingCode: null,
+            dir: '/tmp/slow-xv-expired-pair',
+            socket: null
+        });
+        manager.writeMetadata = vi.fn();
+        manager.start = vi.fn().mockResolvedValue({ pairingCode: 'NEW-CODE' });
 
         const result = await manager.pair('+12025550123');
 
-        expect(result.reused).toBe(true);
-        expect(result.pairingCode).toBeNull();
-        expect(manager.start).not.toHaveBeenCalled();
+        expect(result.pairingCode).toBe('NEW-CODE');
+        expect(manager.start).toHaveBeenCalledWith(sessionId, '12025550123', {
+            requestPairing: true,
+            reactionEmojis: ['🔥']
+        });
+    });
+
+    it('clears a logged-out session and creates a new pairing attempt', async () => {
+        const manager = new SessionManager();
+        const sessionId = 'user_12025550123';
+        const record = {
+            sessionId,
+            phoneNumber: '12025550123',
+            status: 'logged_out',
+            dir: '/tmp/slow-xv-logged-out',
+            socket: null
+        };
+        manager.sessions.set(sessionId, record);
+        manager.writeMetadata = vi.fn();
+        manager.clearAuth = vi.fn();
+        manager.start = vi.fn().mockResolvedValue({ pairingCode: 'RECONNECT-CODE' });
+
+        const result = await manager.pair('+12025550123');
+
+        expect(manager.clearAuth).toHaveBeenCalledWith(record.dir);
+        expect(result.pairingCode).toBe('RECONNECT-CODE');
+        expect(manager.start).toHaveBeenCalledWith(sessionId, '12025550123', {
+            requestPairing: true,
+            reactionEmojis: ['🔥']
+        });
+    });
+
+    it('updates reaction emoji preferences for an already connected session', async () => {
+        const manager = new SessionManager();
+        const record = {
+            sessionId: 'user_12025550123',
+            phoneNumber: '12025550123',
+            status: 'connected',
+            dir: '/tmp/slow-xv-connected',
+            socket: {}
+        };
+        manager.sessions.set(record.sessionId, record);
+        manager.writeMetadata = vi.fn();
+
+        const result = await manager.pair('+12025550123', { reactionEmojis: ['😂', '🙏'] });
+
+        expect(record.reactionEmojis).toEqual(['😂', '🙏']);
+        expect(result.reactionEmojis).toEqual(['😂', '🙏']);
+        expect(manager.writeMetadata).toHaveBeenCalledWith(record);
     });
 
     it('restores no more than 20 saved sessions', async () => {

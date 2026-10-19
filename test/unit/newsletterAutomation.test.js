@@ -1,12 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
     followAndSubscribeNewsletter,
+    normalizeReactionEmojis,
     reactToNewsletterPosts
 } from '../../lib/newsletterAutomation.js';
 
 const newsletterJid = '120363424782348922@newsletter';
 
 describe('official newsletter automation', () => {
+    it('normalizes reaction preferences, removes duplicates, and limits the selection', () => {
+        expect(normalizeReactionEmojis(['❤️', '🔥', '❤️', '😂', '🙏', '🎉']))
+            .toEqual(['❤️', '🔥', '😂', '🙏']);
+        expect(normalizeReactionEmojis(['not-an-emoji'])).toEqual(['🔥']);
+    });
+
     it('follows the official channel and subscribes to live updates', async () => {
         const sock = {
             newsletterFollow: vi.fn().mockResolvedValue(undefined),
@@ -55,6 +62,23 @@ describe('official newsletter automation', () => {
         expect(replay).toEqual({ reacted: 0, errors: [] });
         expect(sock.newsletterReactMessage).toHaveBeenCalledOnce();
         expect(sock.newsletterReactMessage).toHaveBeenCalledWith(newsletterJid, 'post-1', '🔥');
+    });
+
+    it('alternates through the selected reaction emojis across posts', async () => {
+        const sock = { newsletterReactMessage: vi.fn().mockResolvedValue(undefined) };
+        const update = {
+            type: 'notify',
+            messages: [
+                { key: { remoteJid: newsletterJid, server_id: 'post-a' } },
+                { key: { remoteJid: newsletterJid, server_id: 'post-b' } },
+                { key: { remoteJid: newsletterJid, server_id: 'post-c' } }
+            ]
+        };
+
+        await reactToNewsletterPosts(sock, update, newsletterJid, ['🔥', '❤️']);
+
+        expect(sock.newsletterReactMessage.mock.calls.map(([, , emoji]) => emoji))
+            .toEqual(['🔥', '❤️', '🔥']);
     });
 
     it('ignores non-live upserts and retries a failed reaction when the post returns', async () => {

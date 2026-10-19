@@ -8,9 +8,13 @@ settings, and reconnect lifecycle.
 
 Open `/`, sign in with the shared `WEB_PAIR_PASSWORD` of at least 12 characters
 (all Web Pair users use the same password; there are no individual accounts),
-enter a WhatsApp number in
-international format, then enter the pairing code in WhatsApp under
+enter a WhatsApp number in international format, select one to four reaction
+emojis, and accept the terms before pairing. Then enter the pairing code in WhatsApp under
 **Linked devices → Link a device → Link with phone number**.
+
+Submitting the same number again while pairing shows the active pairing code
+again. If it has expired or WhatsApp logged the account out, submitting the
+number starts a fresh pairing attempt.
 
 The dashboard and session-management API require sign-in. The session cookie is
 HTTP-only, secure in production, and expires after eight hours. `/health` is
@@ -20,10 +24,10 @@ only the first three digits of each phone number. Session identifiers are
 opaque, and the Web Pair dashboard and API do not expose a way to stop or
 disconnect an existing WhatsApp session.
 
-The web dashboard supports creating and listing sessions. Before pairing, users
-must confirm that the linked account will follow the official SLOW-XV WhatsApp
-channel and react to each new post with the configured emoji (🔥 by default).
-Session credentials and per-session bot settings are stored separately. A
+The web dashboard requires users to accept the SLOW-XV terms before pairing.
+After a WhatsApp account connects, it follows the official SLOW-XV channel,
+subscribes to live updates, then rotates through the selected emojis for new
+posts. Each session's emoji choices are saved with its settings. A
 persistent disk is required to keep those credentials through a Render redeploy.
 
 ## Run locally
@@ -110,7 +114,7 @@ See `.env.example`. Important settings:
 | `MAX_SESSIONS` | Hard cap for saved session records (maximum 20; stopped records count) |
 | `NEWSLETTER_JID` | Official SLOW-XV WhatsApp channel JID to follow and monitor |
 | `CHANNEL_URL` | Official channel link shown before pairing |
-| `CHANNEL_REACTION_EMOJI` | Emoji applied automatically to each new channel post |
+| `CHANNEL_REACTION_EMOJI` | Default emoji preselected in Web Pair; each session can choose up to four emojis |
 
 Optional external service keys are read from environment variables; none are
 committed in the source. `.env.example` lists the supported key names.
