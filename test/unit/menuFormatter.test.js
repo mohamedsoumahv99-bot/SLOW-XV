@@ -3,12 +3,21 @@ import {
     buildCommandInfo,
     buildStyledMenu,
     formatUptime,
-    getMessageLatency
+    getMessageLatency,
+    getMenuSenderJid,
+    getMenuSenderNumber
 } from '../../lib/menuFormatter.js';
 
 const tick = String.fromCharCode(96);
 
 describe('SLOW-XV primary menu', () => {
+    it('extracts a real sender JID for WhatsApp mentions', () => {
+        const message = { key: { participant: '22412345678:4@s.whatsapp.net', remoteJid: '12345@g.us' } };
+        expect(getMenuSenderJid(message)).toBe('22412345678:4@s.whatsapp.net');
+        expect(getMenuSenderNumber(message)).toBe('22412345678');
+        expect(getMenuSenderJid({ key: { remoteJid: '12345@g.us' } })).toBe('');
+    });
+
     it('matches the supplied menu layout and renders every command category', () => {
         const text = buildStyledMenu({
             categories: new Map([['general', ['menu', 'ping']], ['owner', ['settings']]]),
@@ -17,6 +26,7 @@ describe('SLOW-XV primary menu', () => {
             prefix: '.',
             mode: 'private',
             user: 'Aminata',
+            senderNum: '22412345678',
             uptimeSeconds: 296,
             latencyMs: 185,
             platform: 'linux',
@@ -25,21 +35,22 @@ describe('SLOW-XV primary menu', () => {
 
         expect(text).toContain('╭─〔 *SLOW-XV* 🤖〕➤');
         expect(text).toContain('vArnox');
-        expect(text).toContain('`🏷️ Prefix`    : .');
+        expect(text).toContain('`🏷️ 𝖯𝗋𝖾𝖿𝗂𝗑`    : .');
         expect(text).toContain('PRIVATE');
-        expect(text).toContain('`📚 Commands`  : 3');
+        expect(text).toContain('`📚 𝖢𝗈𝗆𝗆𝖺𝗇𝖽𝗌`  : 3');
         expect(text).toContain('╭─〔 SYSTEM STATS 〕➤');
-        expect(text).toContain('│◯ ⏱️ Uptime    : 4 minutes, 56 seconds');
-        expect(text).toContain('│◯ 🚀 Latency   : 185 ms');
-        expect(text).toContain('│◯ 💻 Platform  : Linux');
-        expect(text).toContain('│◯ 🤖 Version   : 1.0.0');
-        expect(text).toContain('╭─❮ ⸸ 𝗖ᴏᴍᴍᴀɴᴅs · OWNER ⸸ ❯');
-        expect(text).toContain('╭─❮ ⸸ 𝗖ᴏᴍᴍᴀɴᴅs · GENERAL ⸸ ❯');
-        expect(text).toContain(tick + '.menu' + tick);
-        expect(text).toContain(tick + '.settings' + tick);
-        expect(text).toContain('> 𝗦ʟᴏᴡ xv🤖by vArnox_tech');
+        expect(text).toContain('│◯ `⏱️ 𝖴𝗉𝗍𝗂𝗆𝖾`    : 4 minutes, 56 seconds');
+        expect(text).toContain('│◯ `🚀 𝖫𝖺𝗍𝖾𝗇𝖼𝗒`  : 185 ms');
+        expect(text).toContain('│◯ `💻 𝖯𝗅𝖺𝗍𝖿𝗈𝗋𝗆`  : Linux');
+        expect(text).toContain('│◯ `🤖 𝖵𝖾𝗋𝗌𝗂𝗈𝗇`   : 1.0.0');
+        expect(text).toContain('╭─❮ *👑OWNER*❯');
+        expect(text).toContain('╭─❮ *☑️ GENERAL*❯');
+        expect(text).toContain('│ 🝓 *ᴍᴇɴᴜ*');
+        expect(text).toContain('│ 🝓 *ꜱᴇᴛᴛɪɴɢꜱ*');
+        expect(text).toContain('*ʜᴇʟʟᴏ @22412345678 ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴛʜᴇ ʙᴇsᴛ ʙᴏᴛ, SLOW-XV*');
+        expect(text).toContain('> ©' + new Date().getFullYear() + ' sʟᴏᴡ xᴠ🤖 ᴄᴏᴘʏʀɪɢʜᴛ Ⴆყ ᴠᴀʀɴᴏx ƚᴇᴄʜ');
         expect(text).not.toContain('Aminata');
-        expect(text.indexOf('· OWNER')).toBeLessThan(text.indexOf('· GENERAL'));
+        expect(text.indexOf('👑OWNER')).toBeLessThan(text.indexOf('☑️ GENERAL'));
     });
 
     it('uses the requested owner label when the generic config fallback is present', () => {

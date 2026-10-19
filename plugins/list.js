@@ -7,7 +7,9 @@ import {
     buildStyledMenu,
     getBotMode,
     getMessageLatency,
-    getMenuUser
+    getMenuUser,
+    getMenuSenderJid,
+    getMenuSenderNumber
 } from '../lib/menuFormatter.js';
 
 async function makeMenu(message, sock, prefix) {
@@ -18,6 +20,7 @@ async function makeMenu(message, sock, prefix) {
         prefix,
         mode: await getBotMode(sock),
         user: getMenuUser(message),
+        senderNum: getMenuSenderNumber(message),
         uptimeSeconds: process.uptime(),
         latencyMs: getMessageLatency(message),
         version: config.version
@@ -35,6 +38,7 @@ export default {
         const channelInfo = context.channelInfo || {};
         const prefix = (config.prefixes && config.prefixes[0]) || config.prefix || '.';
         const imagePath = path.join(process.cwd(), 'assets', 'menu-catbox.jpg');
+        const senderJid = getMenuSenderJid(message);
 
         if (args.length) {
             const searchTerm = args[0].toLowerCase();
@@ -61,15 +65,10 @@ export default {
         }
 
         const text = await makeMenu(message, sock, prefix);
-        if (fs.existsSync(imagePath)) {
-            await sock.sendMessage(chatId, {
-                image: { url: imagePath },
-                caption: text,
-                ...channelInfo
-            }, { quoted: message });
-        }
-        else {
-            await sock.sendMessage(chatId, { text, ...channelInfo }, { quoted: message });
-        }
+        await sock.sendMessage(chatId, {
+            text,
+            ...channelInfo,
+            mentions: senderJid ? [senderJid] : []
+        }, { quoted: message });
     }
 };

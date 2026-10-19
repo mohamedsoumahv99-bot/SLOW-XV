@@ -1,8 +1,13 @@
 import config from '../config.js';
 import CommandHandler from '../lib/commandHandler.js';
-import fs from 'fs';
-import path from 'path';
-import { buildStyledMenu, getBotMode, getMessageLatency, getMenuUser } from '../lib/menuFormatter.js';
+import {
+    buildStyledMenu,
+    getBotMode,
+    getMessageLatency,
+    getMenuUser,
+    getMenuSenderJid,
+    getMenuSenderNumber
+} from '../lib/menuFormatter.js';
 
 export default {
     command: 'smenu',
@@ -14,8 +19,7 @@ export default {
     async handler(sock, message, _args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         try {
-            const imagePath = path.join(process.cwd(), 'assets', 'thumb.png');
-            const thumbnail = fs.existsSync(imagePath) ? fs.readFileSync(imagePath) : null;
+            const senderJid = getMenuSenderJid(message);
             const prefix = (config.prefixes && config.prefixes[0]) || config.prefix || '.';
             const menuText = buildStyledMenu({
                 categories: CommandHandler.categories,
@@ -24,6 +28,7 @@ export default {
                 prefix,
                 mode: await getBotMode(sock),
                 user: getMenuUser(message),
+                senderNum: getMenuSenderNumber(message),
                 uptimeSeconds: process.uptime(),
                 latencyMs: getMessageLatency(message),
                 version: config.version
@@ -37,9 +42,11 @@ export default {
                     serverMessageId: -1
                 }
             };
-            const messageOptions = thumbnail
-                ? { image: thumbnail, caption: menuText, contextInfo }
-                : { text: menuText, contextInfo };
+            const messageOptions = {
+                text: menuText,
+                mentions: senderJid ? [senderJid] : [],
+                contextInfo
+            };
             await sock.sendMessage(chatId, messageOptions, { quoted: message });
         }
         catch (error) {
