@@ -1,6 +1,6 @@
 import config from '../config.js';
 import commandHandler from '../lib/commandHandler.js';
-import { channelInfo } from '../lib/messageConfig.js';
+import { sendStyledMenu } from '../lib/sendStyledMenu.js';
 import {
     buildStyledMenu,
     getBotMode,
@@ -32,10 +32,11 @@ export default {
             latencyMs: getMessageLatency(message),
             version: config.version
         });
-        await sock.sendMessage(chatId, {
+        await sendStyledMenu(sock, {
+            chatId,
+            message,
             text,
-            ...channelInfo,
             mentions: senderJid ? [senderJid] : []
-        }, { quoted: message });
+        });
     }
 };

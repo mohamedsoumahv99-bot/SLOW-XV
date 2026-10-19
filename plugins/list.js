@@ -2,6 +2,7 @@ import config from '../config.js';
 import commandHandler from '../lib/commandHandler.js';
 import path from 'path';
 import fs from 'fs';
+import { sendStyledMenu } from '../lib/sendStyledMenu.js';
 import {
     buildCommandInfo,
     buildStyledMenu,
@@ -65,10 +66,12 @@ export default {
         }
 
         const text = await makeMenu(message, sock, prefix);
-        await sock.sendMessage(chatId, {
+        await sendStyledMenu(sock, {
+            chatId,
+            message,
             text,
-            ...channelInfo,
-            mentions: senderJid ? [senderJid] : []
-        }, { quoted: message });
+            mentions: senderJid ? [senderJid] : [],
+            channelInfo
+        });
     }
 };

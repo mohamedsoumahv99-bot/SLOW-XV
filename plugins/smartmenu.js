@@ -1,5 +1,6 @@
 import config from '../config.js';
 import CommandHandler from '../lib/commandHandler.js';
+import { sendStyledMenu } from '../lib/sendStyledMenu.js';
 import {
     buildStyledMenu,
     getBotMode,
@@ -33,21 +34,12 @@ export default {
                 latencyMs: getMessageLatency(message),
                 version: config.version
             });
-            const contextInfo = {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: config.newsletterJid,
-                    newsletterName: config.botName,
-                    serverMessageId: -1
-                }
-            };
-            const messageOptions = {
+            await sendStyledMenu(sock, {
+                chatId,
+                message,
                 text: menuText,
-                mentions: senderJid ? [senderJid] : [],
-                contextInfo
-            };
-            await sock.sendMessage(chatId, messageOptions, { quoted: message });
+                mentions: senderJid ? [senderJid] : []
+            });
         }
         catch (error) {
             console.error('Menu Error:', error);
