@@ -1,9 +1,26 @@
 import fs from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sendStyledMenu } from '../../lib/sendStyledMenu.js';
+import { buildCompactStyledMenu } from '../../lib/menuFormatter.js';
 
 describe('SLOW-XV menu delivery', () => {
     afterEach(() => vi.restoreAllMocks());
+
+    it('builds a complete compact menu that fits on the image card', () => {
+        const menu = buildCompactStyledMenu({
+            categories: new Map([['general', ['repo', 'pair']]]),
+            commandCount: 2,
+            prefix: '/',
+            mode: 'PUBLIC',
+            senderNum: '22412345678'
+        });
+
+        expect(menu.length).toBeLessThanOrEqual(900);
+        expect(menu).toContain('@22412345678');
+        expect(menu).toContain('CATEGORIES');
+        expect(menu).toContain('/allmenu');
+    });
+
 
     it('attaches the beginning of a long menu to the image and preserves the remainder', async () => {
         const image = Buffer.from('menu image');

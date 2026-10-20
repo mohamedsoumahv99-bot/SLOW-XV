@@ -2,7 +2,7 @@ import config from '../config.js';
 import CommandHandler from '../lib/commandHandler.js';
 import { sendStyledMenu } from '../lib/sendStyledMenu.js';
 import {
-    buildStyledMenu,
+    buildCompactStyledMenu,
     getBotMode,
     getMessageLatency,
     getMenuUser,
@@ -22,7 +22,7 @@ export default {
         try {
             const senderJid = getMenuSenderJid(message);
             const prefix = (config.prefixes && config.prefixes[0]) || config.prefix || '.';
-            const menuText = buildStyledMenu({
+            const menuText = buildCompactStyledMenu({
                 categories: CommandHandler.categories,
                 commandCount: CommandHandler.commands.size,
                 owner: config.botOwner,
@@ -32,7 +32,6 @@ export default {
                 senderNum: getMenuSenderNumber(message),
                 uptimeSeconds: process.uptime(),
                 latencyMs: getMessageLatency(message),
-                version: config.version
             });
             await sendStyledMenu(sock, {
                 chatId,
