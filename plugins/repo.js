@@ -9,12 +9,15 @@ const PAIR_URL = 'https://slow-xv-pair.up.railway.app/';
 const PAIR_IMAGE_PATH = path.join(process.cwd(), 'assets', 'menu-catbox.jpg');
 
 function getPairMessage(senderNum, password) {
+    const greeting = /^\d+$/.test(senderNum)
+        ? `ʜᴇʏ @${senderNum}, ᴡᴇʟᴄᴏᴍᴇ🎉 ᴛᴏ ᴛʜᴇ SLOW-XV🤖 ᴡᴇʙ ᴘᴀɪʀ.`
+        : 'ᴡᴇʟᴄᴏᴍᴇ🎉 ᴛᴏ ᴛʜᴇ SLOW-XV🤖 ᴡᴇʙ ᴘᴀɪʀ.';
     return [
         '❮ *PAIR WEB REPO*❯',
-        'ʜᴇʏ @' + senderNum + ', ᴡᴇʟᴄᴏᴍᴇ🎉 ᴛᴏ ᴛʜᴇ SLOW-XV🤖 ᴡᴇʙ ᴘᴀɪʀ. ᴄʟɪᴄᴋ ᴛʜᴇ ғᴏʟʟᴏᴡɪɴɢ ʟɪɴᴋ ᴛᴏ ᴄᴏɴɴᴇᴄᴛ ᴛᴏ ᴛʜᴇ ʙᴏᴛ🤖',
+        `${greeting} ᴄʟɪᴄᴋ ᴛʜᴇ ғᴏʟʟᴏᴡɪɴɢ ʟɪɴᴋ ᴛᴏ ᴄᴏɴɴᴇᴄᴛ ᴛᴏ ᴛʜᴇ ʙᴏᴛ🤖`,
         '',
-        ' *ᴡᴇʙ ʟɪɴᴋ*: *' + PAIR_URL + '*',
-        '╰━➤ *PASSWORD*: ' + password,
+        ` *ᴡᴇʙ ʟɪɴᴋ*: *${PAIR_URL}*`,
+        `╰━➤ *PASSWORD*: ${password}`,
         '',
         '*ᴇɴᴛᴇʀ ᴛʜᴇ ᴘᴀssᴡᴏʀᴅ ʙʏ ᴄʟɪᴄᴋɪɴɢ ᴏɴ ᴛʜᴇ ᴡᴇʙsɪᴛᴇ, ᴛʜᴇɴ ᴇɴᴛᴇʀ ʏᴏᴜʀ ᴄʜᴀᴛ sᴀᴘᴏ ɴɪᴍʙᴇʀ.*'
     ].join('\n');
@@ -37,7 +40,7 @@ export default {
         }
 
         const senderJid = getMenuSenderJid(message);
-        const senderNum = getMenuSenderNumber(message) || 'user';
+        const senderNum = getMenuSenderNumber(message);
         const buttons = [
             {
                 name: 'cta_url',
@@ -57,12 +60,21 @@ export default {
         ];
 
         const header = { title: 'SLOW-XV WEB PAIR', hasMediaAttachment: false };
+        let fallbackImage;
         if (fs.existsSync(PAIR_IMAGE_PATH)) {
-            const media = await prepareWAMessageMedia({ image: fs.readFileSync(PAIR_IMAGE_PATH) }, {
-                upload: sock.waUploadToServer
-            });
-            header.hasMediaAttachment = true;
-            header.imageMessage = media.imageMessage;
+            fallbackImage = fs.readFileSync(PAIR_IMAGE_PATH);
+            if (typeof sock.waUploadToServer === 'function') {
+                try {
+                    const media = await prepareWAMessageMedia({ image: fallbackImage }, {
+                        upload: sock.waUploadToServer
+                    });
+                    header.hasMediaAttachment = true;
+                    header.imageMessage = media.imageMessage;
+                }
+                catch (error) {
+                    console.error('Repo image upload failed; continuing without the image:', error.message);
+                }
+            }
         }
 
         const channelContext = getChannelInfo().contextInfo || {};
@@ -85,6 +97,19 @@ export default {
             }
         }, { userJid: sock.user?.id });
 
-        return sock.relayMessage(chatId, generated.message, { messageId: generated.key.id });
+        if (typeof sock.relayMessage === 'function') {
+            try {
+                return await sock.relayMessage(chatId, generated.message, { messageId: generated.key.id });
+            }
+            catch (error) {
+                console.error('Repo interactive delivery failed; sending a text fallback:', error.message);
+            }
+        }
+
+        const fallbackMessage = getPairMessage(senderNum, password);
+        return sock.sendMessage(chatId, {
+            ...getChannelInfo(),
+            ...(fallbackImage ? { image: fallbackImage, caption: fallbackMessage } : { text: fallbackMessage })
+        }, { quoted: message });
     }
 };
