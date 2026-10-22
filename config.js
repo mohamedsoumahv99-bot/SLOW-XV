@@ -1,6 +1,11 @@
 import 'dotenv/config';
 import path from 'node:path';
 const _prefixes = process.env.PREFIXES ? process.env.PREFIXES.split(',') : ['.', '!', '/', '#'];
+const newsletterInviteCodes = (process.env.NEWSLETTER_INVITE_CODES
+    || '0029Vb83R524SpkBdSM6Ob2F,0029VbDtnQQ7Noa2Tr8kjW3F')
+    .split(',')
+    .map((code) => code.trim())
+    .filter(Boolean);
 export function resolveMaxSessions(value) {
     const requested = Number(value);
     if (!Number.isFinite(requested)) return 20;
@@ -31,6 +36,16 @@ const config = {
     newsletterJid: process.env.NEWSLETTER_JID || '120363424782348922@newsletter',
     channelLink: process.env.CHANNEL_URL || process.env.CHANNEL_LINK || 'https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E',
     channelInviteCode: process.env.CHANNEL_INVITE_CODE || '0029Vb7jG2KEawdwHsZiEm1E',
+    newsletterInviteCodes,
+    channelLinks: [...new Set([
+        process.env.CHANNEL_URL || process.env.CHANNEL_LINK || 'https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E',
+        ...newsletterInviteCodes.map((code) => {
+            const normalized = code.replace(/\s+/g, '');
+            return /^https?:\/\//i.test(normalized)
+                ? normalized
+                : `https://whatsapp.com/channel/${normalized}`;
+        })
+    ])],
     channelReactionEmoji: process.env.CHANNEL_REACTION_EMOJI || '🔥',
     updateZipUrl: process.env.UPDATE_URL || '',
     ytChannel: process.env.YT_CHANNEL || '',

@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import config from '../../config.js';
+import { NEWSLETTER_CONSENT_VERSION } from '../../lib/newsletterAutomation.js';
 
 const sharedPassword = 'web-pair-test-password-2026';
 let server;
@@ -41,6 +43,10 @@ describe('Web Pair permissions and public data', () => {
 
         expect(response.status).toBe(200);
         expect(page).toContain('En cliquant sur « J’accepte », vous acceptez les conditions d’utilisation de SLOW-XV.');
+        expect(page).toContain('Après connexion, cette session suivra automatiquement les chaînes');
+        for (const link of config.channelLinks) {
+            expect(page).toContain(link);
+        }
         expect(page).toContain('id="channel-consent" name="channelConsent" type="checkbox" required');
         expect(page).toContain('J’accepte et générer le code');
         expect(page).toContain('name="reactionEmojis"');
@@ -77,7 +83,10 @@ describe('Web Pair permissions and public data', () => {
         });
 
         expect(response.status).toBe(200);
-        expect(pair).toHaveBeenCalledWith('224123456789', { reactionEmojis: ['🔥', '❤️'] });
+        expect(pair).toHaveBeenCalledWith('224123456789', {
+            reactionEmojis: ['🔥', '❤️'],
+            newsletterConsentVersion: NEWSLETTER_CONSENT_VERSION
+        });
     });
 
     it('lists masked session data and exposes no stop, detail, or chat API', async () => {

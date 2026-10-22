@@ -83,7 +83,8 @@ describe('saved WhatsApp sessions', () => {
         expect(result.pairingCode).toBe('NEW-CODE');
         expect(manager.start).toHaveBeenCalledWith(sessionId, '12025550123', {
             requestPairing: true,
-            reactionEmojis: ['🔥']
+            reactionEmojis: ['🔥'],
+            newsletterConsentVersion: 0
         });
     });
 
@@ -108,7 +109,8 @@ describe('saved WhatsApp sessions', () => {
         expect(result.pairingCode).toBe('RECONNECT-CODE');
         expect(manager.start).toHaveBeenCalledWith(sessionId, '12025550123', {
             requestPairing: true,
-            reactionEmojis: ['🔥']
+            reactionEmojis: ['🔥'],
+            newsletterConsentVersion: 0
         });
     });
 

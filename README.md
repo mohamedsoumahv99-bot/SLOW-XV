@@ -25,10 +25,15 @@ opaque, and the Web Pair dashboard and API do not expose a way to stop or
 disconnect an existing WhatsApp session.
 
 The web dashboard requires users to accept the SLOW-XV terms before pairing.
-After a WhatsApp account connects, it follows the official SLOW-XV channel,
-subscribes to live updates, then rotates through the selected emojis for new
-posts. Each session's emoji choices are saved with its settings. A
-persistent disk is required to keep those credentials through a Render redeploy.
+After consent and WhatsApp connection, each account follows the configured
+official channel and the two additional channels in `NEWSLETTER_INVITE_CODES`,
+subscribes to their live updates, then rotates through the selected emojis for
+new posts. Invite links are resolved to newsletter JIDs at runtime. Each
+session's emoji choices are saved with its settings. A persistent disk is
+required to keep those credentials through a Render redeploy.
+Sessions created under the previous consent keep the existing channel only
+until their user accepts the updated channel list in the dashboard; an already
+connected session applies the new consent without needing a new pairing code.
 
 ## Run locally
 
@@ -113,6 +118,7 @@ See `.env.example`. Important settings:
 | `TEMP_DIR` | Temporary media and compiler files |
 | `MAX_SESSIONS` | Hard cap for saved session records (maximum 20; stopped records count) |
 | `NEWSLETTER_JID` | Official SLOW-XV WhatsApp channel JID to follow and monitor |
+| `NEWSLETTER_INVITE_CODES` | Comma-separated WhatsApp channel invite codes or links to follow and monitor in addition to `NEWSLETTER_JID` |
 | `CHANNEL_URL` | Official channel link shown before pairing |
 | `CHANNEL_REACTION_EMOJI` | Default emoji preselected in Web Pair; each session can choose up to four emojis |
 

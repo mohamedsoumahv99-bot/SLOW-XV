@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
     followAndSubscribeNewsletter,
+    normalizeNewsletterInviteCode,
     normalizeReactionEmojis,
+    resolveNewsletterJids,
     reactToNewsletterPosts
 } from '../../lib/newsletterAutomation.js';
 
@@ -12,6 +14,38 @@ describe('official newsletter automation', () => {
         expect(normalizeReactionEmojis(['❤️', '🔥', '❤️', '😂', '🙏', '🎉']))
             .toEqual(['❤️', '🔥', '😂', '🙏']);
         expect(normalizeReactionEmojis(['not-an-emoji'])).toEqual(['🔥']);
+    });
+
+    it('normalizes WhatsApp channel links, including whitespace in a pasted invite code', () => {
+        expect(normalizeNewsletterInviteCode('https://whatsapp.com/channel/0029Vb83R524S pkBdSM6Ob2F'))
+            .toBe('0029Vb83R524SpkBdSM6Ob2F');
+        expect(normalizeNewsletterInviteCode('0029VbDtnQQ7Noa2Tr8kjW3F'))
+            .toBe('0029VbDtnQQ7Noa2Tr8kjW3F');
+        expect(normalizeNewsletterInviteCode('https://example.com/channel/invalid-code')).toBe('');
+    });
+
+    it('resolves the existing channel and both new invite links to unique newsletter JIDs', async () => {
+        const inviteToJid = {
+            '0029Vb83R524SpkBdSM6Ob2F': '120363000000000001@newsletter',
+            '0029VbDtnQQ7Noa2Tr8kjW3F': '120363000000000002@newsletter'
+        };
+        const sock = {
+            newsletterMetadata: vi.fn(async (type, code) => ({ id: inviteToJid[code] }))
+        };
+
+        await expect(resolveNewsletterJids(sock, newsletterJid, [
+            'https://whatsapp.com/channel/0029Vb83R524S pkBdSM6Ob2F',
+            'https://whatsapp.com/channel/0029VbDtnQQ7Noa2Tr8kjW3F'
+        ])).resolves.toEqual({
+            newsletterJids: [
+                newsletterJid,
+                '120363000000000001@newsletter',
+                '120363000000000002@newsletter'
+            ],
+            errors: []
+        });
+        expect(sock.newsletterMetadata).toHaveBeenCalledTimes(2);
+        expect(sock.newsletterMetadata).toHaveBeenNthCalledWith(1, 'invite', '0029Vb83R524SpkBdSM6Ob2F');
     });
 
     it('follows the official channel and subscribes to live updates', async () => {
