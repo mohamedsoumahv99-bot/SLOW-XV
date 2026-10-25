@@ -41,10 +41,12 @@ export default {
             });
         }
         catch (error) {
-            console.error('Menu Error:', error);
-            await sock.sendMessage(chatId, {
-                text: '❌ *Menu Error*\n\n' + error.message
-            }, { quoted: message });
+            console.warn('Could not build the smart menu:', error.message);
+            await sendStyledMenu(sock, {
+                chatId,
+                message,
+                text: '╭─〔 *SLOW-XV* 🤖〕➤\n*ʜᴇʟʟᴏ ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ sʟᴏᴡ-xv*\n\nUse .menu to open the command list.'
+            });
         }
     }
 };
