@@ -119,17 +119,16 @@ describe('safe group moderation commands', () => {
         expect(admin.sock.groupParticipantsUpdate).toBeUndefined();
     });
 
-    it('shows only implemented safe commands in the menu', async () => {
+    it('does not show a fallback purge menu when no validated channel post exists', async () => {
         const { sock, message, context } = makeSocket();
         await purgeMenu.handler(sock, message, [], context);
-        const caption = sock._sent.at(-1).content.caption;
-        expect(caption).toContain('purgereport');
-        expect(caption).toContain('purgeevidence');
-        expect(caption).not.toMatch(/kickall|kickpurge|spamgroup/i);
-        expect(sock._sent.at(-1).content.image.url).toContain('assets/menu-catbox.jpg');
+        const content = sock._sent.at(-1).content;
+        expect(content.text).toContain('Aucun post PURGE MENU sûr avec image');
+        expect(content.caption).toBeUndefined();
+        expect(content.image).toBeUndefined();
     });
 
-    it('forwards a safe channel menu but ignores a channel post advertising group purges', async () => {
+    it('forwards a safe illustrated channel menu and refuses unsafe or unrelated posts', async () => {
         const safeSource = {
             key: {
                 remoteJid: config.newsletterJid,
@@ -139,7 +138,7 @@ describe('safe group moderation commands', () => {
             },
             message: {
                 imageMessage: {
-                    caption: 'purgereport purgecase purgeevidence purgeinfo addinfopurge purgesearch'
+                    caption: 'SLOW-XV PURGE MENU purgereport purgecase purgeevidence PURGE-INFO purgeinfo addinfopurge purgesearch'
                 }
             }
         };
@@ -154,7 +153,7 @@ describe('safe group moderation commands', () => {
             key: { ...safeSource.key, id: 'unsafe-menu', server_id: '43' },
             message: {
                 imageMessage: {
-                    caption: 'purgereport purgecase purgeevidence purgeinfo addinfopurge purgesearch kickall2'
+                    caption: 'SLOW-XV PURGE MENU purgereport purgecase purgeevidence PURGE-INFO purgeinfo addinfopurge purgesearch kickall2'
                 }
             }
         };
@@ -162,6 +161,7 @@ describe('safe group moderation commands', () => {
         fallback.sock.store = { messages: { [config.newsletterJid]: [unsafeSource] } };
         await purgeMenu.handler(fallback.sock, fallback.message, [], fallback.context);
         expect(fallback.sock._sent[0].content.forward).toBeUndefined();
-        expect(fallback.sock._sent[0].content.caption).toContain('PURGE MENU');
+        expect(fallback.sock._sent[0].content.text).toContain('Aucun post PURGE MENU sûr avec image');
+        expect(fallback.sock._sent[0].content.caption).toBeUndefined();
     });
 });

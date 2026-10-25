@@ -7,6 +7,7 @@ function makeFullMenu() {
         '╭─〔 *SLOW-XV* 🤖〕➤',
         '│◯ 📚 Commands : 269',
         '╭─❮ *👑 OWNER* ❯',
+        '╭─〔 SYSTEM STATS 〕➤',
         ...Array.from({ length: 269 }, (_, index) => '│ 🝓 *COMMAND-' + (index + 1) + '*')
     ].join('\n');
 }
@@ -57,7 +58,50 @@ describe('SLOW-XV menu delivery', () => {
         expect(options).toEqual({});
     });
 
-    it('falls back to the complete readable 269-command menu when no channel post is available', async () => {
+    it('skips a newer news post and forwards the newest matching illustrated menu', async () => {
+        const menuPost = makeChannelMenuPost();
+        const newsPost = {
+            ...menuPost,
+            key: { ...menuPost.key, id: 'channel-news-270', server_id: '270' },
+            message: { conversation: 'Breaking news from SLOW-XV' }
+        };
+        const sock = {
+            store: { messages: { [config.newsletterJid]: [menuPost, newsPost] } },
+            sendMessage: vi.fn().mockResolvedValue({ key: { id: 'forwarded-menu' } })
+        };
+
+        await sendStyledMenu(sock, {
+            chatId: 'chat@s.whatsapp.net',
+            message: { key: { remoteJid: 'chat@s.whatsapp.net' } },
+            text: makeFullMenu()
+        });
+
+        expect(sock.sendMessage).toHaveBeenCalledOnce();
+        expect(sock.sendMessage.mock.calls[0][1].forward).toBe(menuPost);
+    });
+
+    it('does not forward a menu post that advertises bulk group actions', async () => {
+        const unsafeMenu = makeChannelMenuPost();
+        unsafeMenu.message.imageMessage.caption += '\n│ *ᴋɪᴄᴋᴀʟʟ* · *sᴘᴀᴍɢʀᴏᴜᴘ*';
+        const sock = {
+            store: { messages: { [config.newsletterJid]: [unsafeMenu] } },
+            sendMessage: vi.fn().mockResolvedValue({ key: { id: 'warning' } })
+        };
+
+        await sendStyledMenu(sock, {
+            chatId: 'chat@s.whatsapp.net',
+            message: { key: { remoteJid: 'chat@s.whatsapp.net' } },
+            text: makeFullMenu()
+        });
+
+        expect(sock.sendMessage).toHaveBeenCalledOnce();
+        const payload = sock.sendMessage.mock.calls[0][1];
+        expect(payload.forward).toBeUndefined();
+        expect(payload.text).toContain('Aucun post de menu SLOW-XV valide');
+        expect(payload.text).not.toContain('COMMAND-269');
+    });
+
+    it('does not fall back to a generated text-only menu when no channel post is available', async () => {
         const sock = {
             store: { messages: {} },
             sendMessage: vi.fn().mockResolvedValue({ key: { id: 'text-menu' } })
@@ -75,11 +119,10 @@ describe('SLOW-XV menu delivery', () => {
         expect(sock.sendMessage).toHaveBeenCalledOnce();
         const [chatId, payload, options] = sock.sendMessage.mock.calls[0];
         expect(chatId).toBe('chat@s.whatsapp.net');
-        expect(payload.text).toContain('Commands : 269');
-        expect(payload.text).toContain('COMMAND-269');
-        expect(payload.text).toContain(config.channelLink);
+        expect(payload.text).toContain('Aucun post de menu SLOW-XV valide');
+        expect(payload.text).not.toContain('Commands : 269');
+        expect(payload.text).not.toContain('COMMAND-269');
         expect(payload.image).toBeUndefined();
-        expect(payload.mentions).toEqual(['22412345678@s.whatsapp.net']);
         expect(options).toEqual({ quoted: message });
     });
 });

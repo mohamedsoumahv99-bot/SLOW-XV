@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     buildCommandInfo,
+    buildCompactStyledMenu,
     buildStyledMenu,
     formatUptime,
     getMessageLatency,
@@ -63,6 +64,28 @@ describe('SLOW-XV primary menu', () => {
             user: 'Aminata'
         });
         expect(text.split('\n')[1]).toContain('vArnox');
+    });
+
+    it('omits bulk group kick and spam commands from both menu formats and adjusts the count', () => {
+        const categories = new Map([
+            ['group', ['kickall', 'kickall2', 'kickall3', 'kickall4', 'kickpurge', 'spamgroup']],
+            ['general', ['ping', 'purgereport']]
+        ]);
+        const fullMenu = buildStyledMenu({
+            categories,
+            commandCount: 8,
+            uptimeSeconds: 0
+        });
+        const compactMenu = buildCompactStyledMenu({
+            categories,
+            commandCount: 8
+        });
+
+        expect(fullMenu).toContain('`📚 𝖢𝗈𝗆𝗆𝖺𝗇𝖽𝗌`  : 2');
+        expect(fullMenu).toContain('*ᴘɪɴɢ*');
+        expect(fullMenu).toContain('*ᴘᴜʀɢᴇʀᴇᴘᴏʀᴛ*');
+        expect(fullMenu).not.toMatch(/kickall|kickpurge|spamgroup/i);
+        expect(compactMenu).toContain('Commands: 2');
     });
 
     it('formats the uptime in the long form used by the primary menu', () => {

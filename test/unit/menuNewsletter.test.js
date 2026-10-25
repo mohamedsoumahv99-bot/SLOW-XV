@@ -69,13 +69,39 @@ describe('full menu newsletter attachment', () => {
 
         const result = await getLatestNewsletterPost(sock, newsletterJid);
 
-        expect(sock.newsletterFetchMessages).toHaveBeenCalledWith(newsletterJid, 1, 0, 0);
+        expect(sock.newsletterFetchMessages).toHaveBeenCalledWith(newsletterJid, 25, 0, 0);
         expect(result.key).toMatchObject({
             remoteJid: newsletterJid,
             id: 'fetched-77',
             server_id: '77'
         });
         expect(result.message.conversation).toBe('Fetched official channel post');
+    });
+
+    it('searches fetched channel history for the newest post that passes the menu validator', async () => {
+        const acceptedPost = {
+            ...channelPost,
+            key: { ...channelPost.key, id: 'channel-menu-41', server_id: '41' },
+            message: { imageMessage: { caption: 'SLOW-XV SYSTEM STATS Commands: 200' } }
+        };
+        const newerNews = {
+            ...channelPost,
+            key: { ...channelPost.key, id: 'channel-news-42', server_id: '42' }
+        };
+        const sock = {
+            store: { messages: {} },
+            newsletterFetchMessages: vi.fn().mockResolvedValue({
+                messages: [acceptedPost, newerNews]
+            })
+        };
+
+        await expect(getLatestNewsletterPost(
+            sock,
+            newsletterJid,
+            post => post.message?.imageMessage?.caption?.includes('SYSTEM STATS')
+        )).resolves.toBe(acceptedPost);
+
+        expect(sock.newsletterFetchMessages).toHaveBeenCalledWith(newsletterJid, 25, 0, 0);
     });
 
     it('creates an actual forwarded channel message with its source metadata', async () => {
