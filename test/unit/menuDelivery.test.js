@@ -71,33 +71,43 @@ describe('SLOW-XV menu delivery', () => {
         expect(sock.sendMessage.mock.calls[0][1].forward).toBe(menuPost);
     });
 
-    it('does not send local or duplicate fallbacks when the source post is unsafe', async () => {
+    it('sends one local image menu when the source post is unsafe', async () => {
         const unsafeMenu = makeChannelMenuPost();
         unsafeMenu.message.imageMessage.caption += '\n│ *ᴋɪᴄᴋᴀʟʟ* · *sᴘᴀᴍɢʀᴏᴜᴘ*';
         const sock = {
             store: { messages: { [config.newsletterJid]: [unsafeMenu] } },
-            sendMessage: vi.fn()
+            sendMessage: vi.fn().mockResolvedValue({ key: { id: 'fallback-menu' } })
         };
 
         await expect(sendStyledMenu(sock, {
-            chatId: 'chat@s.whatsapp.net'
-        })).resolves.toBe(false);
-        expect(sock.sendMessage).not.toHaveBeenCalled();
+            chatId: 'chat@s.whatsapp.net',
+            text: 'SLOW-XV local menu'
+        })).resolves.toBe(true);
+        expect(sock.sendMessage).toHaveBeenCalledOnce();
+        const payload = sock.sendMessage.mock.calls[0][1];
+        expect(payload.forward).toBeUndefined();
+        expect(payload.image.url).toContain('assets/menu-catbox.jpg');
+        expect(payload.caption).toBe('SLOW-XV local menu');
     });
 
-    it('stays silent instead of sending an error or fallback when no channel menu exists', async () => {
+    it('sends one image menu when no channel post exists and never splits the caption', async () => {
+        const longMenu = 'SLOW-XV menu\n' + 'command '.repeat(1200);
         const sock = {
             store: { messages: {} },
-            sendMessage: vi.fn()
+            sendMessage: vi.fn().mockResolvedValue({ key: { id: 'fallback-menu' } })
         };
 
         await expect(sendStyledMenu(sock, {
-            chatId: 'chat@s.whatsapp.net'
-        })).resolves.toBe(false);
-        expect(sock.sendMessage).not.toHaveBeenCalled();
+            chatId: 'chat@s.whatsapp.net',
+            text: longMenu
+        })).resolves.toBe(true);
+        expect(sock.sendMessage).toHaveBeenCalledOnce();
+        const payload = sock.sendMessage.mock.calls[0][1];
+        expect(payload.image.url).toContain('assets/menu-catbox.jpg');
+        expect(payload.caption).toBe(longMenu);
     });
 
-    it('does not turn a failed forward into a second error message', async () => {
+    it('does not retry a failed forward as a second message', async () => {
         const channelMenu = makeChannelMenuPost();
         const sock = {
             store: { messages: { [config.newsletterJid]: [channelMenu] } },

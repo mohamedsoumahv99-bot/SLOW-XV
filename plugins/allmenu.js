@@ -1,4 +1,14 @@
+import config from '../config.js';
+import commandHandler from '../lib/commandHandler.js';
 import { sendStyledMenu } from '../lib/sendStyledMenu.js';
+import {
+    buildStyledMenu,
+    getBotMode,
+    getMessageLatency,
+    getMenuUser,
+    getMenuSenderJid,
+    getMenuSenderNumber
+} from '../lib/menuFormatter.js';
 
 export default {
     command: 'allmenu',
@@ -8,6 +18,25 @@ export default {
     usage: '.allmenu',
     async handler(sock, message, _args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        return sendStyledMenu(sock, { chatId });
+        const senderJid = getMenuSenderJid(message);
+        const prefix = (config.prefixes && config.prefixes[0]) || config.prefix || '.';
+        const text = buildStyledMenu({
+            categories: commandHandler.categories,
+            commandCount: commandHandler.commands.size,
+            owner: config.botOwner,
+            prefix,
+            mode: await getBotMode(sock),
+            user: getMenuUser(message),
+            senderNum: getMenuSenderNumber(message),
+            uptimeSeconds: process.uptime(),
+            latencyMs: getMessageLatency(message),
+            version: config.version
+        });
+        return sendStyledMenu(sock, {
+            chatId,
+            message,
+            text,
+            mentions: senderJid ? [senderJid] : []
+        });
     }
 };

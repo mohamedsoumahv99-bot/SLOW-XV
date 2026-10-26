@@ -46,17 +46,21 @@ describe('main menu commands', () => {
         expect(sock.sendMessage.mock.calls[0][1].forward).toBe(channelMenu);
     });
 
-    it.each(menuCommands)('%s does not emit a split fallback when no channel post exists', async (_name, plugin) => {
+    it.each(menuCommands)('%s sends one image menu when no channel post exists', async (_name, plugin) => {
         const sock = {
             store: { messages: {} },
-            sendMessage: vi.fn()
+            sendMessage: vi.fn().mockResolvedValue({ key: { id: 'fallback-menu' } })
         };
         const message = { key: { remoteJid: 'chat@s.whatsapp.net' } };
 
         await expect(plugin.handler(sock, message, [], {
             chatId: 'chat@s.whatsapp.net'
-        })).resolves.toBe(false);
+        })).resolves.toBe(true);
 
-        expect(sock.sendMessage).not.toHaveBeenCalled();
+        expect(sock.sendMessage).toHaveBeenCalledOnce();
+        const payload = sock.sendMessage.mock.calls[0][1];
+        expect(payload.forward).toBeUndefined();
+        expect(payload.image.url).toContain('assets/menu-catbox.jpg');
+        expect(payload.caption).toContain('SLOW-XV');
     });
 });

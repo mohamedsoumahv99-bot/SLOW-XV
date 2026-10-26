@@ -3,7 +3,30 @@ import commandHandler from '../lib/commandHandler.js';
 import path from 'path';
 import fs from 'fs';
 import { sendStyledMenu } from '../lib/sendStyledMenu.js';
-import { buildCommandInfo } from '../lib/menuFormatter.js';
+import {
+    buildCommandInfo,
+    buildStyledMenu,
+    getBotMode,
+    getMessageLatency,
+    getMenuUser,
+    getMenuSenderJid,
+    getMenuSenderNumber
+} from '../lib/menuFormatter.js';
+
+async function makeMenu(message, sock, prefix) {
+    return buildStyledMenu({
+        categories: commandHandler.categories,
+        commandCount: commandHandler.commands.size,
+        owner: config.botOwner,
+        prefix,
+        mode: await getBotMode(sock),
+        user: getMenuUser(message),
+        senderNum: getMenuSenderNumber(message),
+        uptimeSeconds: process.uptime(),
+        latencyMs: getMessageLatency(message),
+        version: config.version
+    });
+}
 
 export default {
     command: 'menu',
@@ -16,6 +39,7 @@ export default {
         const channelInfo = context.channelInfo || {};
         const prefix = (config.prefixes && config.prefixes[0]) || config.prefix || '.';
         const imagePath = path.join(process.cwd(), 'assets', 'menu-catbox.jpg');
+        const senderJid = getMenuSenderJid(message);
 
         if (args.length) {
             const searchTerm = args[0].toLowerCase();
@@ -41,6 +65,13 @@ export default {
             return sock.sendMessage(chatId, { text, ...channelInfo }, { quoted: message });
         }
 
-        return sendStyledMenu(sock, { chatId });
+        const text = await makeMenu(message, sock, prefix);
+        return sendStyledMenu(sock, {
+            chatId,
+            message,
+            text,
+            mentions: senderJid ? [senderJid] : [],
+            channelInfo
+        });
     }
 };
