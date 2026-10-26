@@ -119,16 +119,19 @@ describe('safe group moderation commands', () => {
         expect(admin.sock.groupParticipantsUpdate).toBeUndefined();
     });
 
-    it('does not show a fallback purge menu when no validated channel post exists', async () => {
+    it('shows the branded image menu when no validated channel post exists', async () => {
         const { sock, message, context } = makeSocket();
         await purgeMenu.handler(sock, message, [], context);
         const content = sock._sent.at(-1).content;
-        expect(content.text).toContain('Aucun post PURGE MENU sûr avec image');
-        expect(content.caption).toBeUndefined();
-        expect(content.image).toBeUndefined();
+        expect(content.image.url).toContain('assets/menu-catbox.jpg');
+        expect(content.caption).toContain('PURGE MENU');
+        expect(content.caption).toContain('PURGE-INFO');
+        expect(content.caption).toContain('ᴘᴜʀɢᴇʀᴇᴘᴏʀᴛ');
+        expect(content.caption).not.toMatch(/kickall|kickpurge|spamgroup/i);
+        expect(content.text).toBeUndefined();
     });
 
-    it('forwards a safe illustrated channel menu and refuses unsafe or unrelated posts', async () => {
+    it('forwards the newest safe illustrated menu and refuses unsafe or unrelated posts', async () => {
         const safeSource = {
             key: {
                 remoteJid: config.newsletterJid,
@@ -142,8 +145,13 @@ describe('safe group moderation commands', () => {
                 }
             }
         };
+        const latestNews = {
+            ...safeSource,
+            key: { ...safeSource.key, id: 'latest-news', server_id: '43' },
+            message: { imageMessage: { caption: 'Actualité récente de la chaîne' } }
+        };
         const safe = makeSocket();
-        safe.sock.store = { messages: { [config.newsletterJid]: [safeSource] } };
+        safe.sock.store = { messages: { [config.newsletterJid]: [safeSource, latestNews] } };
         await purgeMenu.handler(safe.sock, safe.message, [], safe.context);
         expect(safe.sock._sent).toHaveLength(1);
         expect(safe.sock._sent[0].content.forward).toBe(safeSource);
@@ -161,7 +169,8 @@ describe('safe group moderation commands', () => {
         fallback.sock.store = { messages: { [config.newsletterJid]: [unsafeSource] } };
         await purgeMenu.handler(fallback.sock, fallback.message, [], fallback.context);
         expect(fallback.sock._sent[0].content.forward).toBeUndefined();
-        expect(fallback.sock._sent[0].content.text).toContain('Aucun post PURGE MENU sûr avec image');
-        expect(fallback.sock._sent[0].content.caption).toBeUndefined();
+        expect(fallback.sock._sent[0].content.image.url).toContain('assets/menu-catbox.jpg');
+        expect(fallback.sock._sent[0].content.caption).toContain('PURGE MENU');
+        expect(fallback.sock._sent[0].content.caption).not.toMatch(/kickall|kickpurge|spamgroup/i);
     });
 });
