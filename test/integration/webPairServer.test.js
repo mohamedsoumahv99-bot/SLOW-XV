@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import config from '../../config.js';
-import { NEWSLETTER_CONSENT_VERSION } from '../../lib/newsletterAutomation.js';
+import { MAX_REACTION_EMOJIS, NEWSLETTER_CONSENT_VERSION } from '../../lib/newsletterAutomation.js';
 
 const adminPassword = 'test-admin-secret-that-is-long-enough';
 let server;
@@ -38,16 +38,20 @@ async function adminSignIn() {
 }
 
 describe('Web Pair privacy and admin boundary', () => {
-    it('shows terms acceptance separately from optional channel automation consent', async () => {
+    it('shows the three-step flow and keeps channel automation optional', async () => {
         const response = await fetch(`${baseUrl}/`);
         const page = await response.text();
 
         expect(response.status).toBe(200);
-        expect(page).toContain('J’accepte les <a href="/terms"');
-        expect(page).toContain('href="/privacy"');
-        expect(page).toContain('Option facultative');
-        expect(page).toContain('id="automation-consent" name="newsletterAutomationConsent" type="checkbox"');
-        expect(page).toContain('name="reactionEmojis"');
+        expect(page).toContain('id="privacy-accept"');
+        expect(page).toMatch(/id="welcome-continue"[^>]*disabled/);
+        expect(page).toContain('id="terms-accept"');
+        expect(page).toContain('id="automation-consent"');
+        expect(page).toContain('role="switch" aria-checked="false"');
+        expect(page).toContain('const maxSelectedEmojis=3');
+        expect(page).toContain("['❤️','🔥']");
+        expect(page).toContain('href="/admin"');
+        expect(page).toContain('data-emoji="👑"');
         for (const link of config.channelLinks) expect(page).toContain(link);
         expect(page).not.toContain('id="sessions"');
         expect(page).not.toContain('Sessions actives');
@@ -55,10 +59,19 @@ describe('Web Pair privacy and admin boundary', () => {
 
         const terms = await fetch(`${baseUrl}/terms`);
         const privacy = await fetch(`${baseUrl}/privacy`);
+        const docs = await fetch(`${baseUrl}/docs`);
+        const admin = await fetch(`${baseUrl}/admin`);
         expect(terms.status).toBe(200);
         expect((await terms.text()).toLowerCase()).toContain('conditions d’utilisation');
         expect(privacy.status).toBe(200);
         expect((await privacy.text())).toContain('Le suivi des chaînes et les réactions automatiques');
+        expect(docs.status).toBe(200);
+        expect((await docs.text())).toContain('Comment ça marche ?');
+        expect(admin.status).toBe(200);
+        const adminPage = await admin.text();
+        expect(adminPage).toContain('id="session-total"');
+        expect(adminPage).toContain('id="session-connected"');
+        expect(adminPage).toContain('Emojis :');
     });
 
     it('requires legal acceptance and does not require optional automation consent', async () => {
@@ -77,6 +90,7 @@ describe('Web Pair privacy and admin boundary', () => {
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
                 phoneNumber: '224123456789',
+                privacyAccepted: true,
                 termsAccepted: true,
                 newsletterAutomationConsent: false
             })
@@ -92,6 +106,24 @@ describe('Web Pair privacy and admin boundary', () => {
         });
     });
 
+    it('requires separate acceptance of the privacy policy and terms', async () => {
+        const pair = vi.spyOn(sessionManager, 'pair');
+        const missingConsentCases = [
+            { phoneNumber: '224123456788', privacyAccepted: false, termsAccepted: true },
+            { phoneNumber: '224123456786', privacyAccepted: true, termsAccepted: false }
+        ];
+        for (const consent of missingConsentCases) {
+            const response = await fetch(`${baseUrl}/api/pair`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ ...consent, newsletterAutomationConsent: false })
+            });
+            expect(response.status).toBe(400);
+        }
+
+        expect(pair).not.toHaveBeenCalled();
+    });
+
     it('passes explicitly selected emojis when optional channel automation is accepted', async () => {
         const pair = vi.spyOn(sessionManager, 'pair').mockResolvedValue({
             status: 'connected',
@@ -103,6 +135,7 @@ describe('Web Pair privacy and admin boundary', () => {
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
                 phoneNumber: '224123456789',
+                privacyAccepted: true,
                 termsAccepted: true,
                 newsletterAutomationConsent: true,
                 reactionEmojis: ['🔥', '❤️']
@@ -118,6 +151,25 @@ describe('Web Pair privacy and admin boundary', () => {
             termsVersion: '2026-11-13',
             privacyVersion: '2026-11-13'
         });
+    });
+
+    it('enforces the three-emoji limit on the pairing API', async () => {
+        const pair = vi.spyOn(sessionManager, 'pair');
+        const response = await fetch(`${baseUrl}/api/pair`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                phoneNumber: '224123456787',
+                privacyAccepted: true,
+                termsAccepted: true,
+                newsletterAutomationConsent: true,
+                reactionEmojis: ['❤️', '🔥', '😂', '😮']
+            })
+        });
+
+        expect(response.status).toBe(400);
+        expect((await response.json()).error).toContain(`maximum ${MAX_REACTION_EMOJIS}`);
+        expect(pair).not.toHaveBeenCalled();
     });
 
     it('does not expose a public session list or session counts', async () => {
