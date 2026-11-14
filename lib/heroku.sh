@@ -14,7 +14,6 @@ read -r -p "Heroku app name [slow-xv-bot]: " APP_NAME
 APP_NAME=${APP_NAME:-slow-xv-bot}
 read -r -p "Owner number (optional): " OWNER_NUMBER
 OWNER_NUMBER=${OWNER_NUMBER:-}
-
 heroku create "$APP_NAME" 2>/dev/null || true
 heroku stack:set container --app "$APP_NAME"
 heroku config:set \
@@ -23,7 +22,10 @@ heroku config:set \
   BOT_NAME="SLOW-XV" \
   TIMEZONE="Africa/Conakry" \
   SESSIONS_DIR="sessions" \
+  MAX_SESSIONS="120" \
+  SESSION_RESTORE_CONCURRENCY="5" \
   NEWSLETTER_JID="120363424782348922@newsletter" \
+  NEWSLETTER_INVITE_CODES="0029Vb83R524SpkBdSM6Ob2F,0029VbDtnQQ7Noa2Tr8kjW3F,0029Vb7LgiA2v1IzOXJNhk2T" \
   CHANNEL_URL="https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E" \
   CHANNEL_REACTION_EMOJI="🔥" \
   --app "$APP_NAME"
@@ -31,3 +33,4 @@ git remote get-url heroku >/dev/null 2>&1 || heroku git:remote --app "$APP_NAME"
 git push heroku HEAD:main
 heroku ps:scale web=1 --app "$APP_NAME"
 echo "SLOW-XV deployed: https://${APP_NAME}.herokuapp.com"
+echo "Set ADMIN_PANEL_PASSWORD securely in Heroku Config Vars before using /admin."

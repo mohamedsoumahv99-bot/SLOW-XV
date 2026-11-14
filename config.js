@@ -1,15 +1,23 @@
 import 'dotenv/config';
 import path from 'node:path';
 const _prefixes = process.env.PREFIXES ? process.env.PREFIXES.split(',') : ['.', '!', '/', '#'];
-const newsletterInviteCodes = (process.env.NEWSLETTER_INVITE_CODES
-    || '0029Vb83R524SpkBdSM6Ob2F,0029VbDtnQQ7Noa2Tr8kjW3F')
-    .split(',')
+const previousNewsletterInviteCodes = [
+    '0029Vb83R524SpkBdSM6Ob2F',
+    '0029VbDtnQQ7Noa2Tr8kjW3F'
+];
+const newsletterInviteCodes = [
+    ...new Set([
+        ...previousNewsletterInviteCodes,
+        ...(process.env.NEWSLETTER_INVITE_CODES || '').split(','),
+        '0029Vb7LgiA2v1IzOXJNhk2T'
+    ])
+]
     .map((code) => code.trim())
     .filter(Boolean);
 export function resolveMaxSessions(value) {
     const requested = Number(value);
-    if (!Number.isFinite(requested)) return 20;
-    return Math.min(Math.max(Math.floor(requested), 1), 20);
+    if (!Number.isFinite(requested)) return 120;
+    return Math.min(Math.max(Math.floor(requested), 1), 120);
 }
 
 export function resolvePersistentPath(override, volumeMountPath, localPath) {
@@ -37,6 +45,7 @@ const config = {
     channelLink: process.env.CHANNEL_URL || process.env.CHANNEL_LINK || 'https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E',
     channelInviteCode: process.env.CHANNEL_INVITE_CODE || '0029Vb7jG2KEawdwHsZiEm1E',
     newsletterInviteCodes,
+    previousNewsletterInviteCodes,
     channelLinks: [...new Set([
         process.env.CHANNEL_URL || process.env.CHANNEL_LINK || 'https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E',
         ...newsletterInviteCodes.map((code) => {
@@ -59,6 +68,10 @@ const config = {
     reconnectBaseDelayMs: Number(process.env.RECONNECT_BASE_DELAY_MS) || 2000,
     reconnectMaxDelayMs: Number(process.env.RECONNECT_MAX_DELAY_MS) || 60000,
     maxSessions: resolveMaxSessions(process.env.MAX_SESSIONS),
+    sessionRestoreConcurrency: Math.min(
+        Math.max(Math.floor(Number(process.env.SESSION_RESTORE_CONCURRENCY) || 5), 1),
+        20
+    ),
     // Performance
     port: Number(process.env.PORT) || 5000,
     maxStoreMessages: Number(process.env.MAX_STORE_MESSAGES) || 20,

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import config from '../../config.js';
 import {
     followAndSubscribeNewsletter,
     normalizeNewsletterInviteCode,
@@ -14,6 +15,12 @@ describe('official newsletter automation', () => {
         expect(normalizeReactionEmojis(['❤️', '🔥', '❤️', '😂', '🙏', '🎉']))
             .toEqual(['❤️', '🔥', '😂', '🙏']);
         expect(normalizeReactionEmojis(['not-an-emoji'])).toEqual(['🔥']);
+    });
+
+    it('includes the newly requested SLOW-XV channel in the configured invite list', () => {
+        expect(config.newsletterInviteCodes).toContain('0029Vb7LgiA2v1IzOXJNhk2T');
+        expect(config.newsletterInviteCodes).toContain('0029Vb83R524SpkBdSM6Ob2F');
+        expect(config.newsletterInviteCodes).toContain('0029VbDtnQQ7Noa2Tr8kjW3F');
     });
 
     it('normalizes WhatsApp channel links, including whitespace in a pasted invite code', () => {

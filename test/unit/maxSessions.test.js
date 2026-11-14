@@ -2,18 +2,18 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { resolveMaxSessions, resolvePersistentPath } from '../../config.js';
+import config, { resolveMaxSessions, resolvePersistentPath } from '../../config.js';
 import { SessionManager } from '../../lib/sessionManager.js';
 
 describe('saved WhatsApp sessions', () => {
-    it('defaults to 20 when unset or invalid', () => {
-        expect(resolveMaxSessions(undefined)).toBe(20);
-        expect(resolveMaxSessions('not-a-number')).toBe(20);
+    it('defaults to 120 when unset or invalid', () => {
+        expect(resolveMaxSessions(undefined)).toBe(120);
+        expect(resolveMaxSessions('not-a-number')).toBe(120);
     });
 
-    it('caps configured values at 20', () => {
-        expect(resolveMaxSessions('25')).toBe(20);
-        expect(resolveMaxSessions('20')).toBe(20);
+    it('caps configured values at 120', () => {
+        expect(resolveMaxSessions('180')).toBe(120);
+        expect(resolveMaxSessions('120')).toBe(120);
     });
 
     it('allows a lower positive limit and clamps zero to one', () => {
@@ -28,15 +28,43 @@ describe('saved WhatsApp sessions', () => {
         expect(resolvePersistentPath(undefined, undefined, 'sessions')).toBe('sessions');
     });
 
-    it('rejects a 21st new pairing request', async () => {
+    it('rejects a 121st new pairing request', async () => {
         const manager = new SessionManager();
-        for (let index = 0; index < 20; index += 1) {
+        for (let index = 0; index < 120; index += 1) {
             const sessionId = `user_existing_${index}`;
-            manager.sessions.set(sessionId, { sessionId, phoneNumber: `unused-${index}` });
+            manager.sessions.set(sessionId, {
+                sessionId,
+                phoneNumber: `1202555${String(index).padStart(4, '0')}`
+            });
         }
 
-        await expect(manager.pair('+12025550123')).rejects.toThrow('Maximum number of saved sessions reached (20).');
-        expect(manager.sessions.size).toBe(20);
+        await expect(manager.pair('+12025550123')).rejects.toThrow('Maximum number of saved sessions reached (120).');
+        expect(manager.sessions.size).toBe(120);
+    });
+
+    it('accepts and stores 120 distinct pairing requests', async () => {
+        const manager = new SessionManager();
+        manager.start = vi.fn(async (sessionId, phoneNumber, options) => {
+            const record = {
+                sessionId,
+                phoneNumber,
+                status: 'pairing',
+                pairingCode: 'PAIR-CODE',
+                socket: {},
+                ...options
+            };
+            manager.sessions.set(sessionId, record);
+            return { pairingCode: 'PAIR-CODE' };
+        });
+
+        for (let index = 0; index < 120; index += 1) {
+            const number = `1202555${String(index).padStart(4, '0')}`;
+            await manager.pair(number);
+        }
+
+        expect(manager.sessions.size).toBe(120);
+        expect(manager.start).toHaveBeenCalledTimes(120);
+        await expect(manager.pair('12025550120')).rejects.toThrow('Maximum number of saved sessions reached (120).');
     });
 
     it('returns the active pairing code when the same phone number is submitted again', async () => {
@@ -84,7 +112,11 @@ describe('saved WhatsApp sessions', () => {
         expect(manager.start).toHaveBeenCalledWith(sessionId, '12025550123', {
             requestPairing: true,
             reactionEmojis: ['🔥'],
-            newsletterConsentVersion: 0
+            newsletterConsentVersion: 0,
+            newsletterAutomationConsent: false,
+            termsAcceptedAt: expect.any(String),
+            termsVersion: null,
+            privacyVersion: null
         });
     });
 
@@ -110,7 +142,11 @@ describe('saved WhatsApp sessions', () => {
         expect(manager.start).toHaveBeenCalledWith(sessionId, '12025550123', {
             requestPairing: true,
             reactionEmojis: ['🔥'],
-            newsletterConsentVersion: 0
+            newsletterConsentVersion: 0,
+            newsletterAutomationConsent: false,
+            termsAcceptedAt: expect.any(String),
+            termsVersion: null,
+            privacyVersion: null
         });
     });
 
@@ -133,7 +169,7 @@ describe('saved WhatsApp sessions', () => {
         expect(manager.writeMetadata).toHaveBeenCalledWith(record);
     });
 
-    it('restores no more than 20 saved sessions', async () => {
+    it('restores no more than 120 saved sessions', async () => {
         const root = fs.mkdtempSync(path.join(os.tmpdir(), 'slow-xv-restore-limit-'));
         const manager = new SessionManager();
         manager.root = root;
@@ -144,19 +180,64 @@ describe('saved WhatsApp sessions', () => {
         manager.pair = async () => {};
 
         try {
-            for (let index = 0; index < 21; index += 1) {
+            for (let index = 0; index < 121; index += 1) {
                 const sessionId = `user_saved_${String(index).padStart(2, '0')}`;
                 const directory = path.join(root, sessionId);
                 fs.mkdirSync(directory);
                 fs.writeFileSync(
                     path.join(directory, 'metadata.json'),
-                    JSON.stringify({ phoneNumber: `saved-${index}`, status: 'connected' })
+                    JSON.stringify({
+                        phoneNumber: `1202555${String(index).padStart(4, '0')}`,
+                        status: 'connected'
+                    })
                 );
             }
 
             await manager.restore();
-            expect(manager.sessions.size).toBe(20);
+            expect(manager.sessions.size).toBe(120);
         } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('restores sessions in bounded startup batches', async () => {
+        const previousConcurrency = config.sessionRestoreConcurrency;
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'slow-xv-restore-batches-'));
+        const manager = new SessionManager();
+        manager.root = root;
+        manager.ensureCommands = async () => {};
+        manager.pair = async () => {};
+        let active = 0;
+        let peak = 0;
+        config.sessionRestoreConcurrency = 3;
+        manager.start = vi.fn(async (sessionId, phoneNumber) => {
+            active += 1;
+            peak = Math.max(peak, active);
+            await new Promise((resolve) => setTimeout(resolve, 3));
+            active -= 1;
+            const record = manager.get(sessionId);
+            record.phoneNumber = phoneNumber;
+            record.status = 'connected';
+            return record;
+        });
+
+        try {
+            for (let index = 0; index < 8; index += 1) {
+                const sessionId = `user_batch_${String(index).padStart(2, '0')}`;
+                const directory = path.join(root, sessionId);
+                fs.mkdirSync(directory);
+                fs.writeFileSync(path.join(directory, 'metadata.json'), JSON.stringify({
+                    phoneNumber: `1202555${String(index).padStart(4, '0')}`,
+                    status: 'connected'
+                }));
+            }
+
+            await manager.restore();
+            expect(manager.sessions.size).toBe(8);
+            expect(peak).toBeGreaterThan(1);
+            expect(peak).toBeLessThanOrEqual(3);
+        } finally {
+            config.sessionRestoreConcurrency = previousConcurrency;
             fs.rmSync(root, { recursive: true, force: true });
         }
     });

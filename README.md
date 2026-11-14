@@ -1,129 +1,105 @@
 # SLOW-XV
 
-Multi-session WhatsApp automation with a password-protected Web Pair dashboard.
-Each connected WhatsApp account gets its own credentials, message store,
-settings, and reconnect lifecycle.
+Multi-session WhatsApp automation. Each linked account has its own credentials,
+message store, settings, and reconnect lifecycle.
 
-## Web Pair
+## Web Pair and privacy
 
-Open `/`, sign in with the shared `WEB_PAIR_PASSWORD` of at least 12 characters
-(all Web Pair users use the same password; there are no individual accounts),
-enter a WhatsApp number in international format, select one to four reaction
-emojis, and accept the terms before pairing. Then enter the pairing code in WhatsApp under
-**Linked devices → Link a device → Link with phone number**.
+Open `/` to request a WhatsApp pairing code. The public page does not list
+connected accounts or expose phone numbers or session status. Re-enter the same
+international phone number to request a fresh code if the previous one expired
+or the account was logged out.
 
-Submitting the same number again while pairing shows the active pairing code
-again. If it has expired or WhatsApp logged the account out, submitting the
-number starts a fresh pairing attempt.
+Accepting the SLOW-XV terms and privacy policy is required to request a code.
+Following the listed WhatsApp channels and reacting to new posts is a separate,
+optional consent. It is disabled unless the user explicitly selects it. Users
+can withdraw that consent by submitting the same number again with the optional
+setting turned off. Reaction preferences allow up to four emojis.
 
-The dashboard and session-management API require sign-in. The session cookie is
-HTTP-only, secure in production, and expires after eight hours. `/health` is
-public for Render's health checker and only returns readiness and session
-counts; it does not expose phone numbers or pairing codes. The dashboard shows
-only the first three digits of each phone number. Session identifiers are
-opaque, and the Web Pair dashboard and API do not expose a way to stop or
-disconnect an existing WhatsApp session.
+The admin-only panel is at `/admin`. It requires `ADMIN_PANEL_PASSWORD` with at
+least 20 bytes, stored only as a deployment environment secret. It is not a
+shared password for Web Pair users. The panel shows full phone numbers and
+session status to the administrator and can remove local session credentials
+and data. Removing a session locally does not remotely unlink the WhatsApp
+device; that must be done separately in WhatsApp under **Linked devices**.
 
-The web dashboard requires users to accept the SLOW-XV terms before pairing.
-After consent and WhatsApp connection, each account follows the configured
-official channel and the two additional channels in `NEWSLETTER_INVITE_CODES`,
-subscribes to their live updates, then rotates through the selected emojis for
-new posts. Invite links are resolved to newsletter JIDs at runtime. Each
-session's emoji choices are saved with its settings. A persistent disk is
-required to keep those credentials through a Render redeploy.
-Sessions created under the previous consent keep the existing channel only
-until their user accepts the updated channel list in the dashboard; an already
-connected session applies the new consent without needing a new pairing code.
+The legal pages are `/terms` and `/privacy`. They describe session storage and
+the separate optional channel-automation consent. Review them for your
+jurisdiction and service before operating the bot.
 
-## Run locally
+## Session storage and capacity
+
+Each session is stored in its own directory under `SESSIONS_DIR`, including
+WhatsApp authentication files, metadata, and a per-account store. On Railway,
+mount a persistent volume and make `SESSIONS_DIR` resolve beneath that volume
+(the default uses `RAILWAY_VOLUME_MOUNT_PATH`). Without persistent storage,
+sessions can be lost on restart or redeploy.
+
+`MAX_SESSIONS` defaults to 120 and is capped at 120. Stopped and logged-out
+records count toward this limit until an administrator removes them. At startup,
+`SESSION_RESTORE_CONCURRENCY` (default 5, maximum 20) limits how many saved
+sessions initialize together. A configured ceiling is not a guarantee that a
+particular Railway plan can keep 120 accounts online simultaneously; RAM, CPU,
+network limits, WhatsApp behavior, and volume/replica configuration determine
+real capacity. Load-test gradually on the target plan and keep a single Railway
+replica when using one attached volume.
+
+## Local setup
 
 ```bash
 npm ci
 cp .env.example .env
-# Set a private, non-empty WEB_PAIR_PASSWORD in .env
+# Set a new private ADMIN_PANEL_PASSWORD in .env for local admin access.
 npm start
 ```
 
-Open `http://localhost:5000`. For local testing, set `WEB_PAIR_PASSWORD` in
-`.env`; never commit `.env` or WhatsApp session files.
+Open `http://localhost:5000`. Never commit `.env`, WhatsApp credentials, or
+admin secrets.
 
-## Railway deployment
+## Railway
 
-`railway.json` builds with the repository's root `Dockerfile`, starts with
-`npm start`, and waits for `/health` before routing traffic. The Dockerfile
-installs the native build tools and media utilities required by the project.
+`railway.json` uses the repository Dockerfile, starts with `npm start`, and
+checks `/health`. If the Railway service is linked to GitHub auto-deploy, a push
+to its watched branch triggers the deployment. This repository change does not
+connect to or verify Railway.
 
-Before pairing the first WhatsApp account:
+For persistent sessions, attach a Railway volume at `/data` before pairing.
+Set or verify these Railway Variables:
 
-1. Deploy the `main` branch from GitHub.
-2. Attach a Railway volume to the service and mount it at `/data`.
-3. Keep the service to one replica; Railway volumes are not shared across
-   replicas or simultaneous deployments.
-4. Set `WEB_PAIR_PASSWORD` to a private password of at least 12 characters and
-   set `MAX_SESSIONS=20`. Add optional API keys only in Railway's Variables.
+- `SESSIONS_DIR=/data/sessions`
+- `DATA_DIR=/data/data`
+- `MAX_SESSIONS=120`
+- `SESSION_RESTORE_CONCURRENCY=5`
+- `ADMIN_PANEL_PASSWORD` — create a new private secret of at least 20 bytes.
+- `NEWSLETTER_INVITE_CODES` — include all approved official channel invite
+  codes; the new SLOW-XV channel is included in the repository default.
 
-Railway automatically provides `RAILWAY_VOLUME_MOUNT_PATH` for an attached
-volume. The app stores WhatsApp credentials under the volume's `sessions`
-directory and bot settings under its `data` directory. Attach the volume before
-pairing accounts; otherwise credentials written to the container filesystem
-will not move to the volume automatically.
+Do not use a single volume across multiple replicas or concurrent deployments.
+The deployment can restart linked sessions, but WhatsApp may require a new
+pairing after logout or device removal.
 
-The app retries transient WhatsApp connection failures and restores up to 20
-saved sessions after a restart. Stopped, logged-out, and unfinished pairing
-records stay saved but are not automatically reconnected. On a paid Railway
-plan, choose the **Always** restart policy in service settings for automatic
-restarts after exits. Railway Free/trial does not offer that policy and limits
-failure restarts to 10.
+## Other deployment templates
 
-Persistent storage and automatic retries reduce interruptions, but cannot
-guarantee that WhatsApp will never disconnect a linked device. WhatsApp may
-invalidate a session or require a new pairing, for example after a logout or
-device removal. Railway outages and resource limits can also interrupt service.
+`render.yaml`, `fly.toml`, and the helper scripts use the same session limit,
+restore concurrency, admin-secret name, and channel invite configuration.
+Render Free has ephemeral storage and resource limits, so it is not suitable
+for guaranteeing persistent 120-session operation.
 
-## Render deployment
+## Environment
 
-The root `render.yaml` is a Blueprint for a Docker web service. It:
-
-- builds from the repository's `Dockerfile` using Node.js 22;
-- installs the native compiler and media tools required by the bot;
-- listens on Render's port `10000`;
-- waits for startup before `/health` reports ready;
-- caps the configured session count at 20; and
-- asks for `WEB_PAIR_PASSWORD` as a private Render environment variable.
-
-The Blueprint uses Render's Free plan. Free services have 0.1 CPU / 512 MB RAM,
-can spin down after 15 minutes without inbound traffic, and have no persistent
-disk. WhatsApp session credentials and settings are stored on the ephemeral
-filesystem and can be lost when the service sleeps, restarts, or redeploys;
-you may need to pair the accounts again. The limit of 20 is an enforced ceiling,
-not a guarantee that Free resources can run 20 sessions reliably. For persistent,
-always-on multi-session use, choose a paid plan with a persistent disk instead.
-
-Create the service from the GitHub repository as a Render Blueprint, then enter
-a strong password of at least 12 characters when prompted. Optional third-party
-API keys can be added under the service's Render environment settings. Never
-commit pairing credentials, `.env` files, or API keys.
-
-## Configuration
-
-See `.env.example`. Important settings:
+See `.env.example`. Important variables:
 
 | Variable | Purpose |
 | --- | --- |
-| `WEB_PAIR_PASSWORD` | Required password for the dashboard and management API |
-| `OWNER_NUMBER` | Optional bot owner number, without `+` |
-| `PORT` | HTTP port (Render sets `10000`) |
-| `SESSIONS_DIR` | Isolated WhatsApp auth/session root |
-| `DATA_DIR` | Settings and counters (ephemeral on Render Free) |
-| `TEMP_DIR` | Temporary media and compiler files |
-| `MAX_SESSIONS` | Hard cap for saved session records (maximum 20; stopped records count) |
-| `NEWSLETTER_JID` | Official SLOW-XV WhatsApp channel JID to follow and monitor |
-| `NEWSLETTER_INVITE_CODES` | Comma-separated WhatsApp channel invite codes or links to follow and monitor in addition to `NEWSLETTER_JID` |
-| `CHANNEL_URL` | Official channel link shown before pairing |
-| `CHANNEL_REACTION_EMOJI` | Default emoji preselected in Web Pair; each session can choose up to four emojis |
-
-Optional external service keys are read from environment variables; none are
-committed in the source. `.env.example` lists the supported key names.
+| `ADMIN_PANEL_PASSWORD` | Admin-only password; at least 20 bytes; keep it in deployment secrets |
+| `SESSIONS_DIR` | Root directory for isolated WhatsApp session data |
+| `DATA_DIR` | Bot data directory |
+| `MAX_SESSIONS` | Saved-session ceiling, from 1 to 120; defaults to 120 |
+| `SESSION_RESTORE_CONCURRENCY` | Concurrent startup restores, from 1 to 20 |
+| `NEWSLETTER_JID` | Existing official SLOW-XV channel JID |
+| `NEWSLETTER_INVITE_CODES` | Additional channel links/codes resolved by WhatsApp at runtime |
+| `CHANNEL_URL` | Primary channel link displayed on Web Pair |
+| `CHANNEL_REACTION_EMOJI` | Default emoji preselected for optional automation |
 
 ## Checks
 
@@ -134,5 +110,5 @@ npm run lint
 npm audit --omit=dev
 ```
 
-Pairing with a real phone still requires completing the displayed code inside
-WhatsApp. The automated tests do not use or store a real WhatsApp account.
+Automated tests do not pair a real phone or validate the available Railway
+resources. A real pairing still requires approval inside WhatsApp.

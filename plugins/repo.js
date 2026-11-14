@@ -8,18 +8,17 @@ import { getMenuSenderJid, getMenuSenderNumber } from '../lib/menuFormatter.js';
 const PAIR_URL = 'https://slow-xv-pair.up.railway.app/';
 const PAIR_IMAGE_PATH = path.join(process.cwd(), 'assets', 'menu-catbox.jpg');
 
-function getPairMessage(senderNum, password) {
+function getPairMessage(senderNum) {
     const greeting = /^\d+$/.test(senderNum)
         ? `ʜᴇʏ @${senderNum}, ᴡᴇʟᴄᴏᴍᴇ🎉 ᴛᴏ ᴛʜᴇ SLOW-XV🤖 ᴡᴇʙ ᴘᴀɪʀ.`
         : 'ᴡᴇʟᴄᴏᴍᴇ🎉 ᴛᴏ ᴛʜᴇ SLOW-XV🤖 ᴡᴇʙ ᴘᴀɪʀ.';
     return [
         '❮ *PAIR WEB REPO*❯',
-        `${greeting} ᴄʟɪᴄᴋ ᴛʜᴇ ғᴏʟʟᴏᴡɪɴɢ ʟɪɴᴋ ᴛᴏ ᴄᴏɴɴᴇᴄᴛ ᴛᴏ ᴛʜᴇ ʙᴏᴛ🤖`,
+        `${greeting} ᴜsᴇ ᴛʜᴇ ʟɪɴᴋ ʙᴇʟᴏᴡ ᴛᴏ ᴅᴇᴍᴀɴᴅᴇʀ ᴜɴ ᴄᴏᴅᴇ ᴅᴇ ᴄᴏɴɴᴇxɪᴏɴ.`,
         '',
         ` *ᴡᴇʙ ʟɪɴᴋ*: *${PAIR_URL}*`,
-        `╰━➤ *PASSWORD*: ${password}`,
         '',
-        '*ᴇɴᴛᴇʀ ᴛʜᴇ ᴘᴀssᴡᴏʀᴅ ʙʏ ᴄʟɪᴄᴋɪɴɢ ᴏɴ ᴛʜᴇ ᴡᴇʙsɪᴛᴇ, ᴛʜᴇɴ ᴇɴᴛᴇʀ ʏᴏᴜʀ ᴄʜᴀᴛ sᴀᴘᴏ ɴɪᴍʙᴇʀ.*'
+        '*Aucun mot de passe partagé n’est nécessaire pour demander un code.*'
     ].join('\n');
 }
 
@@ -31,14 +30,6 @@ export default {
     usage: '.repo',
     async handler(sock, message, _args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        const password = process.env.WEB_PAIR_PASSWORD;
-        if (!password) {
-            return sock.sendMessage(chatId, {
-                text: '❌ WEB_PAIR_PASSWORD is not configured on the server.',
-                ...getChannelInfo()
-            }, { quoted: message });
-        }
-
         const senderJid = getMenuSenderJid(message);
         const senderNum = getMenuSenderNumber(message);
         const buttons = [
@@ -48,13 +39,6 @@ export default {
                     display_text: '🌐 WEB LINK',
                     url: PAIR_URL,
                     merchant_url: PAIR_URL
-                })
-            },
-            {
-                name: 'cta_copy',
-                buttonParamsJson: JSON.stringify({
-                    display_text: '🔑 COPY PASSWORD',
-                    copy_code: password
                 })
             }
         ];
@@ -80,7 +64,7 @@ export default {
         const channelContext = getChannelInfo().contextInfo || {};
         const interactiveMessage = {
             header,
-            body: { text: getPairMessage(senderNum, password) },
+            body: { text: getPairMessage(senderNum) },
             footer: { text: config.botName },
             nativeFlowMessage: { buttons },
             contextInfo: {
@@ -106,7 +90,7 @@ export default {
             }
         }
 
-        const fallbackMessage = getPairMessage(senderNum, password);
+        const fallbackMessage = getPairMessage(senderNum);
         return sock.sendMessage(chatId, {
             ...getChannelInfo(),
             ...(fallbackImage ? { image: fallbackImage, caption: fallbackMessage } : { text: fallbackMessage })

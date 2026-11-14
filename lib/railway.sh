@@ -12,16 +12,18 @@ read -r -p "Railway service name [slow-xv]: " SERVICE_NAME
 SERVICE_NAME=${SERVICE_NAME:-slow-xv}
 read -r -p "Owner number (optional): " OWNER_NUMBER
 OWNER_NUMBER=${OWNER_NUMBER:-}
-
 railway init --name "$SERVICE_NAME" 2>/dev/null || true
 railway variables set \
   OWNER_NUMBER="$OWNER_NUMBER" \
   DEVELOPER_NAME="VArnox Tech" \
   BOT_NAME="SLOW-XV" \
   TIMEZONE="Africa/Conakry" \
-  SESSIONS_DIR="sessions" \
+  MAX_SESSIONS="120" \
+  SESSION_RESTORE_CONCURRENCY="5" \
   NEWSLETTER_JID="120363424782348922@newsletter" \
+  NEWSLETTER_INVITE_CODES="0029Vb83R524SpkBdSM6Ob2F,0029VbDtnQQ7Noa2Tr8kjW3F,0029Vb7LgiA2v1IzOXJNhk2T" \
   CHANNEL_URL="https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E" \
   CHANNEL_REACTION_EMOJI="🔥"
 railway up --detach
-echo "SLOW-XV deployed. Inspect it with: railway status"
+echo "SLOW-XV deployed. Set ADMIN_PANEL_PASSWORD securely in Railway Variables before using /admin."
+echo "Inspect it with: railway status"

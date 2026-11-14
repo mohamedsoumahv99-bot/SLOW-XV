@@ -14,7 +14,6 @@ read -r -p "Fly region [iad]: " REGION
 REGION=${REGION:-iad}
 read -r -p "Owner number (optional): " OWNER_NUMBER
 OWNER_NUMBER=${OWNER_NUMBER:-}
-
 sed -i "s/^app = .*/app = \"${APP_NAME}\"/" fly.toml
 sed -i "s/^primary_region = .*/primary_region = \"${REGION}\"/" fly.toml
 
@@ -25,9 +24,13 @@ fly secrets set \
   BOT_NAME="SLOW-XV" \
   TIMEZONE="Africa/Conakry" \
   SESSIONS_DIR="sessions" \
+  MAX_SESSIONS="120" \
+  SESSION_RESTORE_CONCURRENCY="5" \
   NEWSLETTER_JID="120363424782348922@newsletter" \
+  NEWSLETTER_INVITE_CODES="0029Vb83R524SpkBdSM6Ob2F,0029VbDtnQQ7Noa2Tr8kjW3F,0029Vb7LgiA2v1IzOXJNhk2T" \
   CHANNEL_URL="https://whatsapp.com/channel/0029Vb7jG2KEawdwHsZiEm1E" \
   CHANNEL_REACTION_EMOJI="🔥" \
   --app "$APP_NAME"
 fly deploy --app "$APP_NAME" --config fly.toml
 echo "SLOW-XV deployed: fly status --app $APP_NAME"
+echo "Set ADMIN_PANEL_PASSWORD with fly secrets set before using /admin."

@@ -15,26 +15,17 @@ import { proto, prepareWAMessageMedia } from '@whiskeysockets/baileys';
 import repoPlugin from '../../plugins/repo.js';
 
 describe('.repo command delivery', () => {
-    const originalPassword = process.env.WEB_PAIR_PASSWORD;
-
     beforeEach(() => {
         vi.clearAllMocks();
-        process.env.WEB_PAIR_PASSWORD = 'test-pair-code';
         vi.spyOn(fs, 'existsSync').mockReturnValue(true);
         vi.spyOn(fs, 'readFileSync').mockReturnValue(Buffer.from('image bytes'));
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
-        if (originalPassword === undefined) {
-            delete process.env.WEB_PAIR_PASSWORD;
-        }
-        else {
-            process.env.WEB_PAIR_PASSWORD = originalPassword;
-        }
     });
 
-    it('relays the pairing response with its image, link button, and copy-code button', async () => {
+    it('relays the pairing response with its image and public link button', async () => {
         const sock = {
             user: { id: 'bot@s.whatsapp.net' },
             waUploadToServer: vi.fn(),
@@ -61,16 +52,15 @@ describe('.repo command delivery', () => {
             .viewOnceMessage.message.interactiveMessage;
         expect(interactive.header.hasMediaAttachment).toBe(true);
         expect(interactive.body.text).toContain('@22412345678');
-        expect(interactive.body.text).toContain('test-pair-code');
+        expect(interactive.body.text).toContain('Aucun mot de passe partagé');
         expect(interactive.contextInfo.mentionedJid).toEqual([
             '22412345678@s.whatsapp.net'
         ]);
 
         const buttons = interactive.nativeFlowMessage.buttons;
-        expect(buttons.map(button => button.name)).toEqual(['cta_url', 'cta_copy']);
+        expect(buttons.map(button => button.name)).toEqual(['cta_url']);
         expect(JSON.parse(buttons[0].buttonParamsJson).url)
             .toBe('https://slow-xv-pair.up.railway.app/');
-        expect(JSON.parse(buttons[1].buttonParamsJson).copy_code).toBe('test-pair-code');
     });
 
     it('falls back to a visible reply if WhatsApp relay rejects the interactive message', async () => {
@@ -90,6 +80,6 @@ describe('.repo command delivery', () => {
         expect(sock.sendMessage).toHaveBeenCalledTimes(1);
         const fallback = sock.sendMessage.mock.calls[0][1];
         expect(fallback.image).toBeInstanceOf(Buffer);
-        expect(fallback.caption).toContain('test-pair-code');
+        expect(fallback.caption).toContain('Aucun mot de passe partagé');
     });
 });

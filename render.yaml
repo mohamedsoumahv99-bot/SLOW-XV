@@ -14,10 +14,12 @@ services:
         value: "10000"
       - key: NODE_OPTIONS
         value: --max-old-space-size=320
-      - key: WEB_PAIR_PASSWORD
+      - key: ADMIN_PANEL_PASSWORD
         sync: false
       - key: MAX_SESSIONS
-        value: "20"
+        value: "120"
+      - key: SESSION_RESTORE_CONCURRENCY
+        value: "5"
       - key: DEVELOPER_NAME
         value: "VArnox Tech"
       - key: SESSIONS_DIR
@@ -28,6 +30,8 @@ services:
         value: "/tmp/slow-xv"
       - key: NEWSLETTER_JID
         value: "120363424782348922@newsletter"
+      - key: NEWSLETTER_INVITE_CODES
+        value: "0029Vb83R524SpkBdSM6Ob2F,0029VbDtnQQ7Noa2Tr8kjW3F,0029Vb7LgiA2v1IzOXJNhk2T"
       - key: CHANNEL_INVITE_CODE
         value: "0029Vb7jG2KEawdwHsZiEm1E"
       - key: CHANNEL_URL
