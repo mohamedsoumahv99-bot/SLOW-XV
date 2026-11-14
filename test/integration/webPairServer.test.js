@@ -38,7 +38,7 @@ async function adminSignIn() {
 }
 
 describe('Web Pair privacy and admin boundary', () => {
-    it('shows the three-step flow and keeps channel automation optional', async () => {
+    it('shows the three-step flow and requires consent for channel automation', async () => {
         const response = await fetch(`${baseUrl}/`);
         const page = await response.text();
 
@@ -47,7 +47,12 @@ describe('Web Pair privacy and admin boundary', () => {
         expect(page).toMatch(/id="welcome-continue"[^>]*disabled/);
         expect(page).toContain('id="terms-accept"');
         expect(page).toContain('id="automation-consent"');
-        expect(page).toContain('role="switch" aria-checked="false"');
+        expect(page).toContain('role="switch" aria-checked="false" aria-required="true"');
+        expect(page).toMatch(/id="emoji-continue"[^>]*disabled/);
+        expect(page).toContain('Obligatoire avant le pairing');
+        expect(page).toContain('prefers-reduced-motion:reduce');
+        expect(page).toContain('@keyframes code-fall');
+        expect(page).toContain('#10141c');
         expect(page).toContain('const maxSelectedEmojis=3');
         expect(page).toContain("['❤️','🔥']");
         expect(page).toContain('href="/admin"');
@@ -64,7 +69,7 @@ describe('Web Pair privacy and admin boundary', () => {
         expect(terms.status).toBe(200);
         expect((await terms.text()).toLowerCase()).toContain('conditions d’utilisation');
         expect(privacy.status).toBe(200);
-        expect((await privacy.text())).toContain('Le suivi des chaînes et les réactions automatiques');
+        expect((await privacy.text())).toContain('Le pairing exige une autorisation séparée');
         expect(docs.status).toBe(200);
         expect((await docs.text())).toContain('Comment ça marche ?');
         expect(admin.status).toBe(200);
@@ -74,7 +79,7 @@ describe('Web Pair privacy and admin boundary', () => {
         expect(adminPage).toContain('Emojis :');
     });
 
-    it('requires legal acceptance and does not require optional automation consent', async () => {
+    it('requires legal acceptance and explicit channel automation consent', async () => {
         const pair = vi.spyOn(sessionManager, 'pair');
         const noTerms = await fetch(`${baseUrl}/api/pair`, {
             method: 'POST',
@@ -82,6 +87,33 @@ describe('Web Pair privacy and admin boundary', () => {
             body: JSON.stringify({ phoneNumber: '224123456789', newsletterAutomationConsent: false })
         });
         expect(noTerms.status).toBe(400);
+        expect(pair).not.toHaveBeenCalled();
+
+        const missingAutomation = await fetch(`${baseUrl}/api/pair`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                phoneNumber: '224123456789',
+                privacyAccepted: true,
+                termsAccepted: true
+            })
+        });
+        expect(missingAutomation.status).toBe(400);
+        expect((await missingAutomation.json()).error).toContain('Autorisez le suivi automatique');
+        expect(pair).not.toHaveBeenCalled();
+
+        const refusedAutomation = await fetch(`${baseUrl}/api/pair`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                phoneNumber: '224123456789',
+                privacyAccepted: true,
+                termsAccepted: true,
+                newsletterAutomationConsent: false
+            })
+        });
+        expect(refusedAutomation.status).toBe(400);
+        expect((await refusedAutomation.json()).error).toContain('Autorisez le suivi automatique');
         expect(pair).not.toHaveBeenCalled();
 
         pair.mockResolvedValue({ status: 'pairing', pairingCode: 'ABCD-1234' });
@@ -92,17 +124,18 @@ describe('Web Pair privacy and admin boundary', () => {
                 phoneNumber: '224123456789',
                 privacyAccepted: true,
                 termsAccepted: true,
-                newsletterAutomationConsent: false
+                newsletterAutomationConsent: true,
+                reactionEmojis: ['🔥', '❤️']
             })
         });
 
         expect(response.status).toBe(200);
         expect(pair).toHaveBeenCalledWith('224123456789', {
-            reactionEmojis: [],
-            newsletterAutomationConsent: false,
-            newsletterConsentVersion: 0,
-            termsVersion: '2026-11-13',
-            privacyVersion: '2026-11-13'
+            reactionEmojis: ['🔥', '❤️'],
+            newsletterAutomationConsent: true,
+            newsletterConsentVersion: NEWSLETTER_CONSENT_VERSION,
+            termsVersion: '2026-11-14',
+            privacyVersion: '2026-11-14'
         });
     });
 
@@ -124,7 +157,7 @@ describe('Web Pair privacy and admin boundary', () => {
         expect(pair).not.toHaveBeenCalled();
     });
 
-    it('passes explicitly selected emojis when optional channel automation is accepted', async () => {
+    it('passes explicitly selected emojis when channel automation is accepted', async () => {
         const pair = vi.spyOn(sessionManager, 'pair').mockResolvedValue({
             status: 'connected',
             phoneNumber: '224123456789',
@@ -148,9 +181,33 @@ describe('Web Pair privacy and admin boundary', () => {
             reactionEmojis: ['🔥', '❤️'],
             newsletterAutomationConsent: true,
             newsletterConsentVersion: NEWSLETTER_CONSENT_VERSION,
-            termsVersion: '2026-11-13',
-            privacyVersion: '2026-11-13'
+            termsVersion: '2026-11-14',
+            privacyVersion: '2026-11-14'
         });
+    });
+
+    it('uses the default emojis when the user selects none', async () => {
+        const pair = vi.spyOn(sessionManager, 'pair').mockResolvedValue({
+            status: 'pairing',
+            pairingCode: 'ABCD-1234'
+        });
+        const response = await fetch(`${baseUrl}/api/pair`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                phoneNumber: '224123456780',
+                privacyAccepted: true,
+                termsAccepted: true,
+                newsletterAutomationConsent: true,
+                reactionEmojis: []
+            })
+        });
+
+        expect(response.status).toBe(200);
+        expect(pair).toHaveBeenCalledWith('224123456780', expect.objectContaining({
+            reactionEmojis: ['❤️', '🔥'],
+            newsletterAutomationConsent: true
+        }));
     });
 
     it('enforces the three-emoji limit on the pairing API', async () => {
