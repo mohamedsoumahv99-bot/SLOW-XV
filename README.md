@@ -14,7 +14,8 @@ Accepting the SLOW-XV terms and privacy policy is required to request a code.
 Following the listed WhatsApp channels and reacting to new posts is a separate,
 optional consent. It is disabled unless the user explicitly selects it. Users
 can withdraw that consent by submitting the same number again with the optional
-setting turned off. Reaction preferences allow up to four emojis.
+setting turned off. Reaction preferences allow up to three emojis; if none are
+selected, the default pair is ❤️ 🔥. The `/docs` page explains the pairing flow.
 
 The admin-only panel is at `/admin`. It requires `ADMIN_PANEL_PASSWORD` with at
 least 20 bytes, stored only as a deployment environment secret. It is not a

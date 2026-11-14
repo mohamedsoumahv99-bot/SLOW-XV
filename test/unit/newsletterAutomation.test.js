@@ -4,6 +4,7 @@ import {
     followAndSubscribeNewsletter,
     normalizeNewsletterInviteCode,
     normalizeReactionEmojis,
+    REACTION_EMOJI_OPTIONS,
     resolveNewsletterJids,
     reactToNewsletterPosts
 } from '../../lib/newsletterAutomation.js';
@@ -12,8 +13,9 @@ const newsletterJid = '120363424782348922@newsletter';
 
 describe('official newsletter automation', () => {
     it('normalizes reaction preferences, removes duplicates, and limits the selection', () => {
-        expect(normalizeReactionEmojis(['❤️', '🔥', '❤️', '😂', '🙏', '🎉']))
-            .toEqual(['❤️', '🔥', '😂', '🙏']);
+        expect(REACTION_EMOJI_OPTIONS).toEqual(['❤️', '🔥', '😂', '😮', '🙏', '👑', '👍', '💯']);
+        expect(normalizeReactionEmojis(['❤️', '🔥', '❤️', '😂', '🙏', '💯']))
+            .toEqual(['❤️', '🔥', '😂']);
         expect(normalizeReactionEmojis(['not-an-emoji'])).toEqual(['🔥']);
     });
 
